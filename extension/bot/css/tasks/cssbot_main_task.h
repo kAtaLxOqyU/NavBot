@@ -14,6 +14,11 @@ public:
 
 	TaskEventResponseResult<CCSSBot> OnDebugMoveToCommand(CCSSBot* bot, const Vector& moveTo) override;
 	TaskEventResponseResult<CCSSBot> OnKilled(CCSSBot* bot, const CTakeDamageInfo& info) override;
+	TaskEventResponseResult<CCSSBot> OnOtherKilled(CCSSBot* bot, CBaseEntity* pVictim, const CTakeDamageInfo& info) override;
+	TaskEventResponseResult<CCSSBot> OnVoiceCommand(CCSSBot* bot, CBaseEntity* subject, int command) override;
+	TaskEventResponseResult<CCSSBot> OnInjured(CCSSBot* bot, const CTakeDamageInfo& info) override;
+	TaskEventResponseResult<CCSSBot> OnSight(CCSSBot* bot, CBaseEntity* subject) override;
+	TaskEventResponseResult<CCSSBot> OnBombPlanted(CCSSBot* bot, const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent) override;
 
 	Vector GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim = AIMSPOT_NONE) override;
 	Vector GetAimPosition(CBaseBot* me, const Vector& pos, botweapons::AttackType attacktype = botweapons::AttackType::MAX_ATTACK_TYPES) override;

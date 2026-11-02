@@ -2,6 +2,7 @@
 #include <mods/css/nav/css_nav_mesh.h>
 #include <mods/css/css_mod.h>
 #include "cssbot.h"
+#include <podbot/podbot_manager.h>
 
 #ifdef EXT_VPROF_ENABLED
 #include <tier0/vprof.h>
@@ -73,6 +74,9 @@ float CCSSBotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 			return DEADEND_COST;
 		}
 	}
+
+	// PODBot experience: avoid places where the team got killed before
+	cost += podbot::PodBot().GetExperienceCost(GetBot(), toArea);
 
 	return cost;
 }

@@ -4,6 +4,7 @@
 #include <bot/interfaces/path/meshnavigator.h>
 #include <bot/tasks_shared/bot_shared_defend_spot.h>
 #include "cssbot_guard_bomb_site_task.h"
+#include <podbot/podbot_manager.h>
 
 AITask<CCSSBot>* CCSSBotGuardBombSiteTask::InitialNextTask(CCSSBot* bot)
 {
@@ -14,7 +15,16 @@ AITask<CCSSBot>* CCSSBotGuardBombSiteTask::InitialNextTask(CCSSBot* bot)
 	{
 		Vector pos = UtilHelpers::getWorldSpaceCenter(site);
 		pos = trace::getground(pos);
-		const float maxtime = CBaseBot::s_botrng.GetRandomReal<float>(settings->GetCampMinTime(), settings->GetCampMaxTime());
+
+		// PODBot map hint: camp at a spot near the site instead of in the middle of it
+		float spot[3];
+
+		if (podbot::PodBot().PickCampSpot(bot, pos.x, pos.y, 1500.0f, spot))
+		{
+			pos = Vector(spot[0], spot[1], spot[2]);
+		}
+
+		const float maxtime = podbot::PodBot().CapCampTime(bot, CBaseBot::s_botrng.GetRandomReal<float>(settings->GetCampMinTime(), settings->GetCampMaxTime()));
 		return new CBotSharedDefendSpotTask<CCSSBot, CCSSBotPathCost>(bot, pos, maxtime, true);
 	}
 

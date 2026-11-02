@@ -47,6 +47,10 @@ public:
 	void FireGameEvent(IGameEvent* event) override;
 	CBaseBot* AllocateBot(edict_t* edict) override;
 	void OnRoundStart() override;
+	void OnMapStart() override;
+	void OnMapEnd() override;
+	void OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CConCommandArgs& args) override;
+	void Update() override;
 	void OnRoundEnd() override;
 	CNavMesh* NavMeshFactory() override;
 	bool IsTeamBasedGame() const override { return true; }

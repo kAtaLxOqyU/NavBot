@@ -2,6 +2,7 @@
 #include <bot/css/cssbot.h>
 #include "nav/css_nav_mesh.h"
 #include "css_mod.h"
+#include <podbot/podbot_manager.h>
 
 #ifdef EXT_VPROF_ENABLED
 #include <tier0/vprof.h>
@@ -37,6 +38,7 @@ CCounterStrikeSourceMod::CCounterStrikeSourceMod()
 	ListenForGameEvent("flashbang_detonate");
 	ListenForGameEvent("bomb_planted");
 	ListenForGameEvent("hostage_follows");
+	ListenForGameEvent("player_say");
 
 	std::fill(m_teammoney.begin(), m_teammoney.end(), 0);
 	m_bombactive = false;
@@ -62,6 +64,10 @@ void CCounterStrikeSourceMod::FireGameEvent(IGameEvent* event)
 		else if (std::strcmp(name, "round_end") == 0)
 		{
 			OnRoundEnd();
+		}
+		else if (std::strcmp(name, "player_say") == 0)
+		{
+			podbot::PodBot().OnPlayerSay(event->GetInt("userid"), event->GetString("text"));
 		}
 		else if (std::strcmp(name, "flashbang_detonate") == 0)
 		{
@@ -137,9 +143,39 @@ void CCounterStrikeSourceMod::OnRoundStart()
 	}
 }
 
+void CCounterStrikeSourceMod::OnMapStart()
+{
+	CBaseMod::OnMapStart();
+	podbot::PodBot().OnMapStart();
+}
+
+void CCounterStrikeSourceMod::OnMapEnd()
+{
+	CBaseMod::OnMapEnd();
+	podbot::PodBot().OnMapEnd();
+}
+
+void CCounterStrikeSourceMod::OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CConCommandArgs& args)
+{
+	CBaseMod::OnClientCommand(pEdict, player, args);
+
+	// the "Follow Me" radio command
+	if (player != nullptr && args.ArgC() > 0 && strcasecmp(args[0], "followme") == 0)
+	{
+		podbot::PodBot().OnFollowMe(player->GetIndex());
+	}
+}
+
+void CCounterStrikeSourceMod::Update()
+{
+	CBaseMod::Update();
+	podbot::PodBot().Update();
+}
+
 void CCounterStrikeSourceMod::OnRoundEnd()
 {
 	CBaseMod::OnRoundEnd();
+	podbot::PodBot().OnRoundEnd();
 	RoundReset();
 }
 
@@ -238,10 +274,33 @@ void CCounterStrikeSourceMod::BuyWeapons(CCSSBot* bot) const
 
 	auto& mgr = GetBuyManager();
 
+	// PODBot layer: personality weapon priorities, team tables and restrictions from the PODBot config files
+	podbot::BuyPlan plan;
+	const bool podbuy = podbot::PodBot().GetBuyPlan(bot, plan);
+
+	if (podbuy && plan.jasonMode)
+	{
+		return;
+	}
+
+	std::vector<std::string> primariesList;
+	std::vector<std::string> secondariesList;
+
+	if (podbuy)
+	{
+		primariesList = plan.primaries;
+		secondariesList = plan.secondaries;
+	}
+	else
+	{
+		primariesList.assign(profile->m_primaries.begin(), profile->m_primaries.end());
+		secondariesList.assign(profile->m_secondaries.begin(), profile->m_secondaries.end());
+	}
+
 	constexpr auto armoritemname = "vesthelm"sv;
 
 	// armor
-	if (bot->GetDifficultyProfile()->GetGameAwareness() >= 40)
+	if (bot->GetDifficultyProfile()->GetGameAwareness() >= 40 && !(podbuy && plan.noArmor))
 	{
 		if (bot->GetArmorAmount() < 100 || !csslib::HasHelmetEquipped(bot->GetEntity()))
 		{
@@ -255,7 +314,7 @@ void CCounterStrikeSourceMod::BuyWeapons(CCSSBot* bot) const
 
 	if (inventory->FindWeaponBySlot(counterstrikesource::CSS_WEAPON_SLOT_PRIMARY) == nullptr)
 	{
-		for (auto& weapon : profile->m_primaries)
+		for (auto& weapon : primariesList)
 		{
 			if (!weapon.empty())
 			{
@@ -270,7 +329,7 @@ void CCounterStrikeSourceMod::BuyWeapons(CCSSBot* bot) const
 	constexpr auto defuseritemname = "defuser"sv;
 
 	if (myteam == counterstrikesource::CSSTeam::COUNTERTERRORIST &&
-		!csslib::HasDefuser(bot->GetEntity()) &&
+		!csslib::HasDefuser(bot->GetEntity()) && !(podbuy && plan.noDefuser) &&
 		CBaseBot::s_botrng.GetRandomChance(profile->m_defuserchance))
 	{
 		TryBuyingItem(bot, mgr, money, defuseritemname.data());
@@ -282,17 +341,17 @@ void CCounterStrikeSourceMod::BuyWeapons(CCSSBot* bot) const
 		constexpr auto flashitemname = "flashbang"sv;
 		constexpr auto smokeitemname = "smokegrenade"sv;
 
-		if (inventory->FindWeaponByClassname("weapon_hegrenade") == nullptr && CBaseBot::s_botrng.GetRandomChance(profile->m_hechance))
+		if (inventory->FindWeaponByClassname("weapon_hegrenade") == nullptr && !(podbuy && plan.noHE) && CBaseBot::s_botrng.GetRandomChance(profile->m_hechance))
 		{
 			TryBuyingItem(bot, mgr, money, heitemname.data());
 		}
 
-		if (inventory->FindWeaponByClassname("weapon_flashbang") == nullptr && CBaseBot::s_botrng.GetRandomChance(profile->m_flashchance))
+		if (inventory->FindWeaponByClassname("weapon_flashbang") == nullptr && !(podbuy && plan.noFlash) && CBaseBot::s_botrng.GetRandomChance(profile->m_flashchance))
 		{
 			TryBuyingItem(bot, mgr, money, flashitemname.data());
 		}
 
-		if (inventory->FindWeaponByClassname("weapon_smokegrenade") == nullptr && CBaseBot::s_botrng.GetRandomChance(profile->m_smokechance))
+		if (inventory->FindWeaponByClassname("weapon_smokegrenade") == nullptr && !(podbuy && plan.noSmoke) && CBaseBot::s_botrng.GetRandomChance(profile->m_smokechance))
 		{
 			TryBuyingItem(bot, mgr, money, smokeitemname.data());
 		}
@@ -300,7 +359,7 @@ void CCounterStrikeSourceMod::BuyWeapons(CCSSBot* bot) const
 
 	if (money >= profile->m_minmoneyforsecupgrade && inventory->HasStartingPistol())
 	{
-		for (auto& weapon : profile->m_secondaries)
+		for (auto& weapon : secondariesList)
 		{
 			if (!weapon.empty())
 			{

@@ -5,6 +5,7 @@
 #include <string_view>
 #include <string>
 #include <array>
+#include <memory>
 
 #include <sdkports/sdk_ehandle.h>
 #include <bot/interfaces/base_interface.h>
@@ -12,12 +13,27 @@
 #include <bot/interfaces/decisionquery.h>
 
 struct edict_t;
+class Vector;
+class QAngle;
+class CBaseBot;
+
+// Optional hook that replaces how a bot's view is aimed (used by the PODBot layer).
+class IAimOverride
+{
+public:
+	virtual ~IAimOverride() = default;
+	// Lets the override shift the point being aimed at (for example skill based aim error).
+	virtual Vector AdjustTarget(CBaseBot* bot, const Vector& target, bool isEntity) = 0;
+	// Writes the new view angles to 'out' and returns true, or returns false to use the default turn.
+	virtual bool Turn(CBaseBot* bot, const QAngle& current, const QAngle& desired, bool hasTarget, float distance, float dt, QAngle& out) = 0;
+};
 
 // Interface responsible for controller the bot's input
 class IPlayerController : public IBotInterface, public IPlayerInput
 {
 public:
 	IPlayerController(CBaseBot* bot);
+	void SetAimOverride(std::shared_ptr<IAimOverride> override) { m_aimOverride = std::move(override); }
 	~IPlayerController() override;
 	
 	static constexpr auto AIM_ON_TARGET_DOT_TOLERANCE = 0.995f; // Dot product result must be larger than this to consider the aim to be on target
@@ -187,6 +203,7 @@ private:
 	QAngle m_snapToAngles;
 	IntervalTimer m_steadyTimer; // Aim stability timer
 	float m_aimSpeed;
+	std::shared_ptr<IAimOverride> m_aimOverride;
 	CountdownTimer m_trackingUpdateTimer; // Timer for tracking entities
 
 	IDecisionQuery::DesiredAimSpot m_desiredAimSpot;

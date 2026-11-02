@@ -1,0 +1,3554 @@
+diff --git a/PackageScript b/PackageScript
+index 7dcc705..8ed9e6c 100644
+--- a/PackageScript
++++ b/PackageScript
+@@ -22,6 +22,8 @@ folder_list = [
+   'addons/sourcemod/configs/navbot/insmic',
+   'addons/sourcemod/configs/navbot/hl1mp',
+   'addons/sourcemod/configs/navbot/cstrike',
++  'addons/sourcemod/configs/navbot/podbot',
++  'addons/sourcemod/configs/navbot/podbot/hints',
+   'addons/sourcemod/data/',
+   'addons/sourcemod/data/navbot',
+   'addons/sourcemod/data/navbot/cstrike',
+@@ -145,3 +147,19 @@ for cxx_task in Extension.extensions:
+     builder.AddCopy(cxx_task.binary, folder_map['addons/sourcemod/extensions/x64'])
+   else:
+     builder.AddCopy(cxx_task.binary, folder_map['addons/sourcemod/extensions'])
++
++CopyFiles('configs/podbot', 'addons/sourcemod/configs/navbot/podbot',
++  [
++    'podbot.cfg',
++    'botskill.cfg',
++    'botnames.txt',
++    'botweapons.cfg',
++    'botchat.txt'
++  ]
++)
++
++CopyFiles('configs/podbot/hints', 'addons/sourcemod/configs/navbot/podbot/hints',
++  [
++    'de_dust2.hint'
++  ]
++)
+diff --git a/configs/podbot/botchat.txt b/configs/podbot/botchat.txt
+new file mode 100644
+index 0000000..aa84db1
+--- /dev/null
++++ b/configs/podbot/botchat.txt
+@@ -0,0 +1,329 @@
++# All Bot Chat Messages are stored here
++#
++# Any line begining with '#' in the first column is a comment line
++# No line should pass 79 Characters!(equivilent to this alphabetical line)
++#
++#abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz
++#
++# Messages for each Type of Chat begin with a marker enclosed in []
++#
++# Marker Types:
++#
++# [BOMBPLANT] Holds the Messages for the Counter Terrorists
++#	        if a Bomb got planted
++# [KILLED]    Bots say this Message if they killed somebody
++# [DEADCHAT]  Bots say these Lines if they are dead and in
++#	        Spectator Mode
++#
++# %f = Name of Player with the most frags
++# %m = Mapname
++# %r = Time until Round ends
++# %s = Name of Player to reply
++# %t = Name of Teammate alive
++# %v = Last Victim of this Bot
++#
++# Counter Messages for Bomb planted:
++# Minimum Number is 1!
++#
++[BOMBPLANT]
++HEY!!! They're tryin to kill Kenny! Those bastards!!!!
++oh no %t, what did they do to the plants?
++we got %r left to figure what they want to bomb!!
++FIDEL CASTRO DID IT! no....WAIT SADDAM DID IT!! no....wait...
++sssshhhhh... %t, did you hear that beeping noise? was that your watch?
++...Aaaaaaaaaaaa I DON'T WANN DIE....im famous and yer not %t.
++#
++#
++# Messages after killing somebody:
++# Minimum Number is 1
++# For the %v the name of the victim will
++# be inserted
++# NOTE: Include a %v placeholder in every Line!
++#
++[KILLED]
++%v,  this reminds me of a Slayer song...all this bloodshed
++Sorry, %v. can we do the scene again?
++so....how do you like being worm food %v???
++Yer supposed to be dead, %v its part of the game!!!!!
++Sorry, %v. that looked as good as an Andy Worhol painting!
++%v, ill use the rubber bullets next time !
++Whatsamatter, %v?? lose your head? hahaha gotta keep cool!!
++I had to do it, %v. You understand. The Director said so!!
++hey %v.......MUAHAHAHAHAHAHAHAHAHAHA
++%v, I enjoyed that one!! Lets play it again Sam
++I've always been better, %v. AND YOU KNOW THIS ...MAN!!!!!!.
++Hip-Hop is phat %v!!
++Look at all that blood %v  YEEEEEEEEEEEHAAAAAAAAAAAAAAA?
++That'll teach you, %v !
++Hey, %v! Ju can start callin me Scarface..Ju Piece o' CHIT!!!!
++are you talking to me %v?? 
++%v get it right this time, dont stand in front of my bullets.
++%v, what are you laying around for??? hehe
++#
++#
++# Chat Messages when dead and bored
++# Minimum Number is 9!
++#
++[DEADCHAT]
++Stop playing Dead....we see that you do that well now get up.
++It makes me sick to look at you FAMOUS idiots!
++It's time to change your diapers %v haha yer acting like a baby
++I am an actor not a game player, thats why im losing
++I get weak in the knees when I see %s comin at me!
++no way %f!! No human is that quick
++Look at that score!!.. %f is good at this gaming stuff, too bad the movies suck!!
++Spectating is something normal people do....not us.
++Have you heard of Metallica?
++My whole family is full of winners....so i will win too!
++Why are we playing this game, we should be shooting a scene?
++WTF, I wish someone better than %s would join the server.
++are James and Lars still on???
++why is %f always winning??
++The game is ok but all this waiting........
++Why does everyone keep trying to hurt me, where are my stuntmen??
++Our team is going to win for sure
++CS, a game for the rich!
++This is even close to real looking, good work on the set !!
++%r and %t are still alive! Something must be very wrong...
++Stop waiting around you freaks!! There's only %r left !!
++How much money does the winner get? hehe
++Still %r left in this round...do something!!! 
++This game isnt going to get me more famous than I already am!
++you know for famous people we sure are stipud, uh, i mean stupid
++I can't believe this...this is crazy!
++this game is good to take out some of that agresion i have
++Look at those well-paid retarded idiots !
++I usually don't play this with famous people !
++%f You act like my sister...she's a Tomboy
++Not %m again!!! Be original for crying out loud!
++%f is really rockin the set
++%f when's your next movie coming out?
++%f are you coming to the award show again this year?
++%f how much money do you make a year nowadays?
++%f get off your lazy butt and find them!!
++%f The day is long and you are making it longer again
++%f were your parents musicians?
++%f i need some more sugar with this coffee
++%f gimme a smoke please
++What music are you listening to??
++I need my beauty sleep %t, you guys take em out for me!
++...All that and a bag of chips with a side order of bacon!
++I really like this %m, it jams on gameplay.
++I want more money for this...they arent paying me enough for the humiliation
++Who's on first??? 
++Whatever happened to Wu-Tang?? they had style for musicians
++Im rich...i dont have to put up with this crap
++Well, I believe my contract is up....time to go.
++Anyone here like doing love scenes???
++Where have all the good times gone??
++Dear fellow famous people....KILL FASTER !!!!
++I think i have to go now...bye, cu at the coke party later
++LOL! Look at %t ... WTF ?...never seen anything like that before !
++I have an audition, B R B
++Are any of these weapons real, i never used them in my scenes?
++I need to understand this agresion I see here today
++I would have made more money with Porn
++I'm off ta snort this real fast, B R B
++WTF, I mean why not guys, vote me as Mayor, Jesse the Body Ventura did it...
++Vote %f out he didnt bring enough cash to place his bet on who wins!!!
++Aren't we getting a bit old for this?
++I didnt realize that this was so difficult...Movies are cooler
++Anyone remember Animal House??
++HEY %f isnt it time you stopped using that weapon?
++Lets all act like we are dead....see if we can fool em next round.
++Woah %f has better stats than me again, he must be on caine!!
++I'm really good at this, its not special effects !
++I'm tired, lets leave %t !!
++I smoke a lot when i have to wait, why do famous actors have to wait?
++WTF, ....??
++#
++#
++# Start of the "dynamic" replies from here
++# After each @KEY Tag you need to specify the
++# keywords in quotation marks and uppercase. You can
++# have several keywords (aliases) each separated by a comma.
++# After the keywords line, the answers or messages to this
++# special keyword need to be given. In theory there can be an unlimited
++# number of answers of course you should care about the used memory ;)    
++#
++#
++[REPLIES]
++@KEY "WHO'S ON FIRST"
++Whats on Second?, %s
++I don't know but this isnt Baseball
++I forgot how that one goes, it was a classic tho!
++I'm not a fan of baseball, sorry %s
++
++@KEY "AGRESION"
++I think you need to learn how to spell first it's aggression
++you cant spell you way out of a paper bag...a.g.g.r.e.s.s.i.o.n
++the correct spelling is AGGRESSION
++
++@KEY "FAMOUS"
++Who's famous %s??
++Whats so cool about Fame?  THE MONEY!!!!!
++My fame is due to hard work *snicker*
++Ever see a drugged up famous person??? lol
++Famous Schmamous....we are all normal people
++
++@KEY "PORN"
++yeah %s, you need to enjoy anal for that though....
++I already saw some early footage of you %s, with Ron Jeremy hehe
++mmmmmmmmm Chasey Lain
++Porn??? ARE YOU NUTS??
++
++@KEY "ANIMAL HOUSE"
++John Belushi ruled in that movie %s
++Thats how my College scene went down !!
++wow, %s, you like those vintage films...vintage for me anyway :) 
++I'm gonna order a pizza and rent that right now CU L8TR !
++
++@KEY "WAIT", "WAITING"
++MAN you are so impatient %s
++Would you please stop complaining %s have patience
++back in my Army days it was all....Hurry up and Wait
++You are just going to have to deal with it
++Please tell some jokes %s, I'm bored too
++
++@KEY "AGAIN"
++quit your whining, it will all be over soon
++I think you have a serious problem
++yeah and dont let that happen again
++
++@KEY "WISH"
++%s, what do you want ?
++Wishes are cool, Can i have 3 of them %s!
++Wish wish wish.....andthing else you do?
++thats wishful thinking
++
++@KEY "B R B"
++NOOOOOOOOO DONT GOOOOOOOOOOOOO %s!
++can someone tell me what brb means?
++Come on %s, you keep saying you're leaving but you're still here!
++ok see you around %s
++CU
++bye, take care
++
++@KEY "HEHE", "HAHA", "LOL", ":)", "WTF"
++yeah lol, %s!
++What's so funny, %s...
++hihi
++haha
++hehe
++:)
++LMAO
++ROFL
++ROFLMAO
++
++@KEY "I THINK ", "I BELIEVE "
++don't think, %s..... DO ;-)
++And I think you should sit back down and play!
++Plz give me your ICQ Number %s
++I think you're retarded
++I believe you're retarded
++
++@KEY "WU-TANG", "METALLICA", "DREAM THEATER", "HIP-HOP", "MUSIC", "SLAYER"
++Umm...I don't care as long as it's not commercial 
++Trance beats make me dizzy when I'm drunk
++Busta Rhymes is the fastest rapper..and has great style too
++um...METALLICA RULLLLLLZZZZZZZZZZZZZ
++Dream Theater is the most perfect band !!
++just gimme one night with Kylie Minogue.....MUAHAHAHAHA
++
++@KEY "WELL-PAID", "MONEY", "CASH", "RICH"
++You make more money than I do!!
++Well-Paid......hahaha that must be a joke
++Where are you from %s ? cuz where I'm from no one has money
++Just change your producer and you'll have money %s!
++you can't be well paid %s....your movies doesn't sell hahahaha
++being rich is so cool...you can do anything ...or not do anything hehe
++
++@KEY "WIN", "WINNING", "WINNERS", "WINNER"
++Is winning all you ever think about %s?
++It's best to not think about the win....just have fun
++I am a Winner Type so you actually have no real chance...
++Speaking of win.....I'm going to Vegas, not de_vegas
++
++@KEY "SORRY", "EXCUSE"
++Yeah, but only non-famous people have to say sorry, or excuse me
++The excuse doesn't help me now, %s!
++THERE IS NO EXCUSE!!! yer not sorry!!!
++Dont worry about it...
++
++@KEY "WHAT", "WHY", "WHERE", "WHO", "WHEN", "HOW"
++You will never find out, %s!
++No idea, %s
++What is this, %s, 20 Questions ??
++Find out yourself, %s !
++
++@KEY "REAL"
++define real for me please
++nothing in this world is real
++dream on, real doesnt exist in an actors schedule
++real huh....get a real life, stop acting all the time
++
++@KEY "SCENE", "SCENES"
++oh YES... a LOVE scene!!!
++I have to shoot a scene tomorrow so i can play today
++What kind of scene??
++If its a love scene make sure you forget your parts after the kiss ! hehe
++
++@KEY "STUNTMEN"
++I never use stuntmen in my scenes
++I'm afraid of the things they make us do and need stuntmen too
++Stuntmen are crazy, who wants to jump off buildings for a living
++dont cry...they are trained professionals LOL
++
++@KEY "NUTS"
++yeah i got a pair a nuts %s
++
++@KEY "MOVIE", "MOVIES"
++Man, cant we talk about something besides our jobs??
++My movies have the best action scenes
++a movie is just a movie...but the Matrix is real!!
++what would i do if couldnt act.
++
++@KEY "ACT", "ACTING"
++you couldnt act your way out of a wet paper bag
++acting? none of us can really act...its the director making us look good
++acting is my life. my whole life is just an act. OMG IM SO DEPRESSED
++Act like a fag....itll look funny with that weapon in your hand!
++did anyone attend acting school?
++
++@KEY "COKE", "HASH", "DRUGS"
++damn....no wonder everyone things actors have drug problems....WE DO!
++drugs sex and movies....in that order !! hihi
++coke huh....coca cola drinkers party :)
++drugs help me deal with being so ...so famous and RICH! 
++
++[UNKNOWN]
++Bla bla bla...
++What did you say, %s?
++Concentrate on the game, %s!
++Chatting with you %s is so great! I always wanted to meet you
++These chat-messages are freaking me out! I feel like I know you all!
++Don't spam, %s!
++How do you all type so fast, I can't keep up!
++Yeah, %s. You're right!......as if
++No way, %s...this is insane
++Where are you from originaly, %s?
++I can't believe how you can play and win all the time, %f!
++YEAH RIGHT! HAHA SURE!!!
++I believe you!!!
++OK, uhuh LOL
++Why is everybody always saying the same things???
++Hey %s....oh nevermind!
++What are you talking about %s
++Who said that? I resemble that remark
++Oh, really? I'm so impressed...*snicker*
++Very funny, %s! you must be on drugs.
++%s !
++ZZZZZZZzzzzzzZZZZZZZZZZZZZZZzzzzzzzzzzzzZZZZZZZZ
++Wazzzzuuuuuuup? haha
++I thought all of you action heros would be good at this...guess not hehe 
++Have you got ICQ, %s?
++OMG you're weird in person! i'd rather watch your movies.
++I aint got the cash to buy me some more hash
++Roger That, Colonel, I'm on my way
++Huh? WTF, what was that all about ?
++Silly rabbit...um....i forgot the rest
+diff --git a/configs/podbot/botnames.txt b/configs/podbot/botnames.txt
+new file mode 100644
+index 0000000..5d804a6
+--- /dev/null
++++ b/configs/podbot/botnames.txt
+@@ -0,0 +1,128 @@
++# This File contains all Botnames which are used if you don't
++# specify a name using "pb add"
++# There must be at least 9 names in here and you're allowed a maximum
++# of 21 chars for the name ! Why ? The "[POD]" will be
++# placed before the Name and the Skill will be appended...
++#
++# Line below contains 21 chars as a marker for you
++#23456789012345678901
++#
++#
++Danny_Devito
++Clint_Eastwood
++Wesley_Snipes
++Joe_Pesci
++George_Hamilton
++Jackie_Chan
++Jet_Li
++Jack_Palance
++Sean_Penn
++John_Malkovich
++Bruce_Lee
++Nicole_Kidman
++Chris_Tucker 
++Larry_Fishbourne
++Samuel_L_Jackson
++Keanau_Reeves
++Will_Smith
++Tommy_Lee_Jones
++Woody_Harrelson
++Sean_Connery
++Harrison_Ford
++Jeff_Bridges
++Stacy_Keech
++George_Clooney
++Sylvester_Stallone
++Jean_Claude_Van_Damme
++Arnold_Schwarzenegger
++Kim_Basinger
++Tom_Cruise
++Robert_Redford
++Andrew_Dice_Clay
++Jennifer_Anniston
++Matt_Damon
++#
++# 32 Names
++# 
++Bridget_Fonda
++Anthony_Hopkins
++Charlie_Sheen
++Juliet_Lewis
++Robert_Downey_Jr
++Jim_Carrey
++Patrick_Swayze
++Chris_Rock
++Rodney_Dangerfield
++Kate_Winslet
++Heather_Locklear
++Leonardo_DiCaprio
++Mel_Gibson
++Bruce_Willis
++Quentin_Tarantino
++Harvey_Keitel
++Sigourney_Weaver
++Heather_Graham
++Burt_Reynolds
++Jennifer_Love_Hewitt
++Drew_Barrymore
++Marylin_Monroe
++Adam_Sandler
++Cheech Marin
++Mickey_Rourke
++Sharon_Stone
++Al_Pacino
++Marlon_Brando
++Robert_Deniro
++Jack_Nicholson
++Thomas Chong
++#
++# 64 Names
++#
++Fragnatic
++DaTa
++Botman
++V0id
++Android
++M0rbid Desire
++Ping of Death
++Killing Frenzy
++Campers Death
++Count Floyd
++Polymorph
++Headshot Deluxe
++Trust Noone
++Borg Queen
++Make me Laugh
++Psyke
++Eliza
++Die Humans
++Alloc
++killaruna
++Electrica
++Ivan
++Laserdance
++S.E.S.
++L33t B0t
++U're Dead
++Violently Happy
++Make my Day
++Fuzzy Logic
++Pissed Off
++Neuromancer
++Neural Noise
++#
++# 96 Names
++# 
++Dr. No
++Kugelfang
++Murder Inc.
++Bloodlust
++Pseudolukian
++Zap!
++Rambotnic
++Hemp Invader
++Dredd
++Botsie Collins
++BotsBlitz
++Funky Byte
++Berzerk Bot
+\ No newline at end of file
+diff --git a/configs/podbot/botskill.cfg b/configs/podbot/botskill.cfg
+new file mode 100644
+index 0000000..2992d1e
+--- /dev/null
++++ b/configs/podbot/botskill.cfg
+@@ -0,0 +1,96 @@
++# In this File you can tweak some of the POD-Bot Skill Settings
++#
++# NOTE: If in podbot.cfg you have pb_aim_type set to 1 (inhuman turns) 
++# the turnspeeds here will be overridden
++#
++# MIN/MAX_DELAY specifies the Reaction Time in Seconds
++#
++# MIN/MAX_TURNSPEED is the number of Degrees allowed to turn in 1 Frame
++#
++# AIM_OFFS_X/Y/Z are the offsets for aiming (note that HL uses
++# the lefthanded coordinate system where Z is the Up Direction)
++#
++# HEADSHOT_ALLOW specifies (in percent) the probability of aiming at the Head.
++# This doesn't mean he actually fires at your head but he is allowed to do so.
++#
++# HEAR_SHOOTHRU specifies (in percent) the probability of shooting through Obstacles,
++# if the Bot has heard someone, has a weapon to do so and has this enemy in his viewing cone.
++#
++# SEEN_SHOOTHRU specifies (in percent) the probability of shooting through Obstacles,
++# if the Bot has seen this enemy before, has a weapon to do so and this enemy is still in his viewing cone.
++#
++# The order is from the Worst Bots to the Best.
++#
++# DON'T CHANGE THE ORDER IN THIS FILE UNLESS YOU WANT TO EXPERIENCE WEIRD THINGS!
++
++# Settings for Bots Skill 0-19
++MIN_DELAY 0.80
++MAX_DELAY 1.00
++MIN_TURNSPEED 2.0
++MAX_TURNSPEED 3.0
++AIM_OFFS_X 40.0
++AIM_OFFS_Y 40.0
++AIM_OFFS_Z 50.0
++HEADSHOT_ALLOW 0
++HEAR_SHOOTTHRU 0
++SEEN_SHOOTTHRU 0
++
++# Settings for Bots Skill 20-39
++MIN_DELAY 0.60
++MAX_DELAY 0.80
++MIN_TURNSPEED 3.0
++MAX_TURNSPEED 4.0
++AIM_OFFS_X 30.0
++AIM_OFFS_Y 30.0
++AIM_OFFS_Z 42.0
++HEADSHOT_ALLOW 10
++HEAR_SHOOTTHRU 0
++SEEN_SHOOTTHRU 0
++
++# Settings for Bots Skill 40-59
++MIN_DELAY 0.40
++MAX_DELAY 0.60
++MIN_TURNSPEED 4.0
++MAX_TURNSPEED 6.0
++AIM_OFFS_X 20.0
++AIM_OFFS_Y 20.0
++AIM_OFFS_Z 32.0
++HEADSHOT_ALLOW 30
++HEAR_SHOOTTHRU 0
++SEEN_SHOOTTHRU 50
++
++# Settings for Bots Skill 60-79
++MIN_DELAY 0.20
++MAX_DELAY 0.40
++MIN_TURNSPEED 6.0
++MAX_TURNSPEED 8.0
++AIM_OFFS_X 10.0
++AIM_OFFS_Y 10.0
++AIM_OFFS_Z 18.0
++HEADSHOT_ALLOW 50
++HEAR_SHOOTTHRU 30
++SEEN_SHOOTTHRU 80
++
++# Settings for Bots Skill 80-99
++MIN_DELAY 0.10
++MAX_DELAY 0.20
++MIN_TURNSPEED 8.0
++MAX_TURNSPEED 10.0
++AIM_OFFS_X 5.0
++AIM_OFFS_Y 5.0
++AIM_OFFS_Z 10.0
++HEADSHOT_ALLOW 80
++HEAR_SHOOTTHRU 50
++SEEN_SHOOTTHRU 100
++
++# Settings for Bots Skill 100
++MIN_DELAY 0.00
++MAX_DELAY 0.10
++MIN_TURNSPEED 10.0
++MAX_TURNSPEED 12.0
++AIM_OFFS_X 0.0
++AIM_OFFS_Y 0.0
++AIM_OFFS_Z 0.0
++HEADSHOT_ALLOW 100
++HEAR_SHOOTTHRU 100
++SEEN_SHOOTTHRU 100
+diff --git a/configs/podbot/botweapons.cfg b/configs/podbot/botweapons.cfg
+new file mode 100644
+index 0000000..81efe89
+--- /dev/null
++++ b/configs/podbot/botweapons.cfg
+@@ -0,0 +1,86 @@
++# This File holds some Tables for buying of weapons
++# and configuration of Weapon Prefs for Personalities
++#
++# The Tables start from the least desired Weapon
++# to the best.
++# BE EXTREMELY CAREFULL WITH THESE TABLES BECAUSE A WRONG NUMBER
++# OF ENTRIES OR A SCREWED UP FORMAT CAN EASILY CRASH POD, THERE'S
++# NO ERROR PARSING DONE!
++
++# Numbering of the weapons:
++# 0 - KNIFE
++# 1 - USP
++# 2 - GLOCK18
++# 3 - DEAGLE
++# 4 - P228
++# 5 - ELITE
++# 6 - FIVESEVEN
++# 7 - M3
++# 8 - XM1014
++# 9 - MP5NAVY
++# 10 - TMP
++# 11 - P90
++# 12 - MAC10
++# 13 - UMP45
++# 14 - AK47
++# 15 - SG552
++# 16 - M4A1
++# 17 - GALIL
++# 18 - FAMAS
++# 19 - AUG
++# 20 - SCOUT
++# 21 - AWP
++# 22 - G3SG1
++# 23 - SG550
++# 24 - M249
++# 25 - SHIELD
++
++# Following are Tables which specify which Team is allowed
++# to buy a weapon on a Map. You can also use it to allow/disallow
++# Weapons for a Team or a Map/Gamemode (remember that some
++# Weapons are team-specific and can't be bought by another team).
++# -1 = Disallow Buying for any Team
++# 0 = Terrorist Team only
++# 1 = CT Team only
++# 2 = Can be bought by both Teams
++# Standard Weapon Tab for CS & DE Maps
++#0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
++[STANDARD]
++-1,-1,-1,02,02,00,01,02,02,02,01,02,00,02,00,00,01,00,01,01,02,02,00,01,02,01
++
++
++# Weapon Tab for AS Maps
++[AS]
++#0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
++-1,-1,-1,02,02,00,01,01,01,01,01,01,00,02,00,-1,01,00,01,01,00,00,-1,01,01,01
++
++# Escape & Knife Arena Maps aren't supported by CS and
++# so I don't care about them in POD-Bot neither ! 
++
++# Some example Tables:
++# Pistols Only
++#-1,-1,-1,2,2,0,1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
++# Shotguns Only
++#-1,-1,-1,-1,-1,-1,-1,2,2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
++# SubMachine-Guns Only
++#-1,-1,-1,-1,-1,-1,-1,-1,-1,2,1,2,0,2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
++
++
++# The following Tables stores the Weapon Priorities of the Bots depending on
++# Personality (it affects buying & picking up better weapons from the
++# ground).
++
++# Weapon Priorities for a Normal Standard Bot
++#0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
++[NORMAL]
++00,02,01,04,05,06,03,12,10,24,25,13,11,08,07,09,22,23,18,21,20,19,15,17,14,16
++
++# Weapon Priorities for an Agressive Bot
++#0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
++[AGRESSIVE]
++00,02,01,04,05,06,03,24,25,23,20,21,22,10,12,13,11,09,07,08,18,17,19,15,16,14
++
++# Weapon Priorities for a Defensive Bot
++#0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
++[DEFENSIVE]
++00,02,01,04,05,06,03,07,08,12,10,13,11,09,24,18,14,17,16,15,19,20,21,22,23,25
+diff --git a/configs/podbot/hints/de_dust2.hint b/configs/podbot/hints/de_dust2.hint
+new file mode 100644
+index 0000000..cf652b9
+--- /dev/null
++++ b/configs/podbot/hints/de_dust2.hint
+@@ -0,0 +1,124 @@
++# CS:S hints for de_dust2 converted from PODBot waypoints by official waypoint file
++# type x y z team(0 any, 2 T, 3 CT) lookX1 lookY1 lookX2 lookY2   (feet position)
++goal 1266 2381 128 0 0 0 0 0
++goal 1173 2320 96 0 0 0 0 0
++goal 1263 2321 96 0 0 0 0 0
++goal 1024 2400 128 0 0 0 0 0
++goal 1283 2642 86 0 0 0 0 0
++goal 1259 2635 97 0 0 0 0 0
++goal 1262 2431 96 0 0 0 0 0
++goal 1260 2480 97 0 0 0 0 0
++goal 1222 2358 96 0 0 0 0 0
++goal 1255 2538 98 0 0 0 0 0
++goal 1226 2432 96 0 0 0 0 0
++goal 1021 2417 96 0 0 0 0 0
++goal 1144 2362 96 0 0 0 0 0
++goal 1152 2469 96 0 0 0 0 0
++goal 1152 2414 96 0 0 0 0 0
++goal 1151 2515 96 0 0 0 0 0
++goal 1151 2592 96 0 0 0 0 0
++goal 1228 2594 96 0 0 0 0 0
++goal 1064 2592 96 0 0 0 0 0
++goal 1064 2515 96 0 0 0 0 0
++goal 1021 2470 96 0 0 0 0 0
++goal 1072 2316 129 0 0 0 0 0
++goal 1043 2316 129 0 0 0 0 0
++goal 1108 2318 129 0 0 0 0 0
++goal 1288 2581 70 0 0 0 0 0
++goal 1266 2595 128 0 0 0 0 0
++goal -1406 2553 1 0 0 0 0 0
++goal -1522 2551 0 0 0 0 0 0
++goal -1521 2831 0 0 0 0 0 0
++goal -1360 2736 1 0 0 0 0 0
++goal -1424 2672 2 0 0 0 0 0
++goal -1697 2693 0 0 0 0 0 0
++goal -1712 2803 0 0 0 0 0 0
++goal -1625 2832 0 0 0 0 0 0
++goal -1606 2696 0 0 0 0 0 0
++goal -1691 2599 0 0 0 0 0 0
++goal -1695 2541 0 0 0 0 0 0
++goal -1526 2739 0 0 0 0 0 0
++goal -1397 2814 0 0 0 0 0 0
++goal -1361 2585 1 0 0 0 0 0
++goal -1360 2547 1 0 0 0 0 0
++camp 535 2323 128 0 295 1737 408 1702
++camp 416 1718 0 0 -72 1304 46 1196
++camp 496 1776 0 0 0 1371 85 1285
++camp 87 1552 0 0 -330 1067 -441 1191
++camp 272 1672 0 0 107 1054 346 1037
++camp 272 1799 96 0 204 1193 317 1190
++camp 798 2564 96 0 497 2000 396 2067
++camp 1196 2356 96 0 1409 1761 1512 1821
++camp 1222 2286 0 0 1461 1693 1525 1723
++camp 1168 2081 0 0 1807 2064 1785 2251
++camp 711 2444 96 0 1245 2100 1288 2180
++camp 824 2076 -50 0 1463 2074 1454 2182
++camp 478 2078 96 0 1113 2070 1088 2260
++camp 476 2401 96 0 1062 2154 1105 2303
++camp 752 2384 -58 0 1305 2063 1346 2146
++camp 1776 1904 0 0 1190 1656 1144 1839
++camp 1679 1809 0 0 1269 1320 1195 1392
++camp 1366 1216 0 0 850 837 793 932
++camp 976 1200 0 0 686 630 860 571
++camp 939 1136 0 0 628 577 545 632
++camp 752 1200 0 0 935 587 625 573
++camp 976 509 0 0 896 1144 1014 1147
++camp 994 686 0 0 522 1117 600 1190
++camp 1304 716 -20 0 668 787 690 896
++camp 1576 229 -192 0 970 392 1596 860
++camp 1776 1008 64 0 1158 854 1200 1251
++camp 1754 678 64 0 1118 734 1125 792
++camp -720 334 0 0 -305 820 -82 291
++camp 365 -451 0 0 137 146 -251 -627
++camp 720 258 0 0 80 250 327 -247
++camp 752 224 0 0 173 496 340 -266
++camp 752 97 0 0 436 653 166 355
++camp 752 352 0 0 593 972 424 901
++camp 752 576 0 0 159 813 129 432
++camp 528 672 0 0 1054 1036 1106 946
++camp -160 -1008 41 0 158 -452 193 -474
++camp 90 -509 0 0 430 33 482 -3
++camp -496 -208 0 0 -264 388 -272 -807
++camp 368 464 0 0 496 -163 -268 534
++camp -464 1603 -128 0 157 1756 48 1220
++camp -560 1520 -112 0 -86 1090 -1159 1294
++camp -976 -1008 130 0 -874 -384 -1226 -424
++camp -1040 -496 128 0 -1480 -960 -1672 -598
++camp -988 -272 130 0 -1189 -879 -1280 -841
++camp -1414 -276 128 0 -1586 338 -1519 354
++camp -1552 -112 2 0 -1580 527 -2172 -269
++camp -2032 528 32 0 -1441 773 -1393 486
++camp -1936 624 32 0 -1327 816 -1296 633
++camp -1824 688 32 0 -1214 882 -1195 572
++camp -1424 688 32 0 -2057 776 -2057 596
++camp 560 318 0 0 1200 297 731 935
++camp 560 274 0 0 1008 731 1174 454
++camp -569 560 0 0 -90 984 34 348
++camp -1776 976 32 0 -1364 488 -1163 1159
++camp -1552 976 32 0 -2046 573 -2189 1014
++camp -2160 1264 32 0 -1548 1451 -1570 1017
++camp -2160 1168 32 0 -1757 1665 -1522 1116
++camp -1680 1392 32 0 -1400 817 -1755 756
++camp -72 2285 -128 0 -381 1724 -496 1805
++camp -64 2000 -128 0 -440 2516 161 2598
++camp 55 2368 -128 0 309 1782 504 1914
++camp 496 2512 -128 0 624 1886 376 1884
++camp -464 1647 -128 0 5 1213 145 1453
++camp -240 2288 -128 0 -8 1692 -443 1681
++camp -272 2480 -106 0 -164 1852 -387 1851
++camp -160 2000 -128 0 -745 1740 -800 1987
++camp -526 1996 -128 0 -334 1386 -234 1427
++camp -1142 2064 -2 0 -535 2017 -523 2091
++camp -1264 2464 20 0 -1319 1831 -646 2325
++camp -1360 2418 0 0 -1268 1786 -1484 1791
++camp -2096 2528 32 0 -1524 2247 -1464 2440
++camp -2096 2912 32 0 -1565 2557 -1481 2738
++camp -2096 2976 32 0 -1760 2431 -1490 2782
++camp -2096 2592 32 0 -1820 2016 -1715 2079
++camp -1795 2497 32 0 -1260 2150 -1321 2069
++camp -1757 2448 32 0 -1900 1825 -1954 1839
++camp -1712 1616 0 0 -1818 2247 -1683 2255
++camp -1616 1616 0 0 -2015 2116 -1861 2207
++camp -1617 1658 0 0 -2060 2118 -1946 2207
++camp -1560 1727 0 0 -2133 2011 -2046 2142
++camp -1328 1264 32 0 -1747 785 -1792 828
+diff --git a/configs/podbot/podbot.cfg b/configs/podbot/podbot.cfg
+new file mode 100644
+index 0000000..ae16ad8
+--- /dev/null
++++ b/configs/podbot/podbot.cfg
+@@ -0,0 +1,92 @@
++# podbot.cfg - PODBot-style settings for the CS:S bot (CS:S edition)
++# Same format as the original PODBot: '#' comment lines, "pb_name value" settings
++# and "pb add ..." commands. Removed (GoldSrc only): pb_wptfolder, pb_usespeech,
++# pb_spray, pb_latencybot, pb_welcomemsgs, pb_passwordkey, pb_password, "bind".
++# Admin access uses SourceMod admin flags instead of a password.
++
++# pb add [skill [personality [team [model [name]]]]]
++#   skill 0-100; personality 1 normal, 2 aggressive, 3 defensive; team 1 T, 2 CT, 5 auto
++# pb fillserver [skill [personality [team [model]]]]
++
++# Bot count limits (used by pb fillserver / auto add+kick). 0 disables auto fill.
++pb_minbots 0
++pb_maxbots 16
++pb_bot_quota_match 0
++pb_bot_join_team "ANY"
++pb_skin 5
++
++# Random skill range for bots added without an explicit skill.
++pb_minbotskill 95
++pb_maxbotskill 100
++
++# Seconds between perception checks.
++pb_timer_sound 0.5
++pb_timer_pickup 0.3
++pb_timer_grenade 0.5
++
++# Free for all: bots attack everybody, including teammates. The server also needs mp_friendlyfire 1.
++pb_ffa 0
++# Bots may fire at an enemy they only heard or saw a moment ago behind a wall. The chance per skill
++# level is SEEN_SHOOTTHRU / HEAR_SHOOTTHRU in botskill.cfg. Starts off in the CS:S edition (untested): set 1 to try it.
++pb_shootthruwalls 0
++pb_numfollowuser 5
++# CS:S edition: how long (seconds) bots follow a player after the "Follow Me" radio command
++pb_followtime 60
++pb_maxweaponpickup 10
++pb_mapstartbotdelay 10
++pb_autokill 0
++pb_autokilldelay 45
++pb_maxcamptime 30
++# CS:S edition: camp at spots taken from PODBot's waypoints (configs/navbot/podbot/hints/<map>.hint)
++pb_use_hints 1
++pb_jasonmode 0
++
++# 0 none, 1 [POD] prefix + (skill), 2 prefix only, 3 (skill) only
++pb_detailnames 1
++
++# Experience: how strongly bots avoid places where they were killed.
++pb_dangerfactor 2000
++
++pb_chat 1
++# CS:S edition chat tuning (new settings): chance in percent per event, cooldown in seconds
++pb_chat_killed_chance 30
++pb_chat_bomb_chance 40
++pb_chat_dead_chance 50
++pb_chat_reply_chance 25
++pb_chat_cooldown 8
++pb_radio 1
++# CS:S edition radio tuning (new settings): chance in percent per event, cooldown in seconds
++pb_radio_enemydown_chance 20
++pb_radio_takingfire_chance 30
++pb_radio_enemyspot_chance 25
++pb_radio_cooldown 10
++
++# Aim system: 1 inhuman turns, 2 constant angle velocity, 3 botaim1, 4 botaim2
++pb_aim_type 4
++pb_aim_spring_stiffness_x 13.0
++pb_aim_spring_stiffness_y 13.0
++pb_aim_damper_coefficient_x 0.22
++pb_aim_damper_coefficient_y 0.22
++pb_aim_deviation_x 2.0
++pb_aim_deviation_y 1.0
++pb_aim_influence_x_on_y 0.25
++pb_aim_influence_y_on_x 0.17
++# CS:S edition: multiplies both damper values (raise it to reduce overshoot after a flick)
++pb_aim_damping_scale 1.0
++pb_aim_offset_delay 1.2
++pb_aim_notarget_slowdown_ratio 0.5
++pb_aim_target_anticipation_ratio 2.2
++
++# Buy restrictions, one character per weapon in botweapons.cfg order (1 = restricted).
++# The last bit (shield) does not exist in CS:S and is ignored.
++pb_restrweapons "00000000000000000000000000"
++# vest, vest+helmet, flashbang, he, smoke, defuser, nightvision, primary ammo, secondary ammo
++pb_restrequipammo "000000000"
++
++pb add 100
++pb add 100
++pb add 100
++pb add 100
++pb add 100
++pb add 100
++pb add 100
+diff --git a/extension/bot/css/cssbot.cpp b/extension/bot/css/cssbot.cpp
+index ecbbe05..90d8690 100644
+--- a/extension/bot/css/cssbot.cpp
++++ b/extension/bot/css/cssbot.cpp
+@@ -2,6 +2,7 @@
+ #include <mods/css/nav/css_nav_mesh.h>
+ #include <mods/css/css_mod.h>
+ #include "cssbot.h"
++#include <podbot/podbot_manager.h>
+ 
+ #ifdef EXT_VPROF_ENABLED
+ #include <tier0/vprof.h>
+@@ -74,5 +75,8 @@ float CCSSBotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
+ 		}
+ 	}
+ 
++	// PODBot experience: avoid places where the team got killed before
++	cost += podbot::PodBot().GetExperienceCost(GetBot(), toArea);
++
+ 	return cost;
+ }
+diff --git a/extension/bot/css/cssbot_combat.cpp b/extension/bot/css/cssbot_combat.cpp
+index 3a598f2..626f6df 100644
+--- a/extension/bot/css/cssbot_combat.cpp
++++ b/extension/bot/css/cssbot_combat.cpp
+@@ -1,6 +1,7 @@
+ #include NAVBOT_PCH_FILE
+ #include "cssbot.h"
+ #include "cssbot_combat.h"
++#include <podbot/podbot_manager.h>
+ 
+ CCSSBotCombat::CCSSBotCombat(CCSSBot* bot) :
+ 	ICombat(bot)
+@@ -19,3 +20,9 @@ bool CCSSBotCombat::CanFireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity
+ 
+ 	return ICombat::CanFireWeaponAtEnemy(bot, threat, activeWeapon);
+ }
++
++void CCSSBotCombat::FireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon, const bool bypassLOS)
++{
++	const bool throughWalls = podbot::PodBot().ShouldShootThrough(static_cast<CCSSBot*>(const_cast<CBaseBot*>(bot)), threat, activeWeapon);
++	ICombat::FireWeaponAtEnemy(bot, threat, activeWeapon, bypassLOS || throughWalls);
++}
+diff --git a/extension/bot/css/cssbot_combat.h b/extension/bot/css/cssbot_combat.h
+index 2541726..e5d1805 100644
+--- a/extension/bot/css/cssbot_combat.h
++++ b/extension/bot/css/cssbot_combat.h
+@@ -22,6 +22,8 @@ public:
+ 
+ protected:
+ 	bool CanFireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon) const override;
++	// PODBot shoot-through-walls (pb_shootthruwalls)
++	void FireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon, const bool bypassLOS = false) override;
+ 
+ private:
+ 	CountdownTimer m_flashbangedTimer;
+diff --git a/extension/bot/css/cssbot_sensor.cpp b/extension/bot/css/cssbot_sensor.cpp
+index 546976a..6131926 100644
+--- a/extension/bot/css/cssbot_sensor.cpp
++++ b/extension/bot/css/cssbot_sensor.cpp
+@@ -1,8 +1,30 @@
+ #include NAVBOT_PCH_FILE
+ #include "cssbot.h"
+ #include "cssbot_sensor.h"
++#include <podbot/podbot_manager.h>
+ 
+ CCSSBotSensor::CCSSBotSensor(CCSSBot* bot) :
+ 	CSimplePvPSensor<CCSSBot>(bot)
+ {
+ }
++
++bool CCSSBotSensor::IsFriendly(CBaseEntity* entity) const
++{
++	if (podbot::PodBot().IsFreeForAll(GetBot<CCSSBot>()))
++	{
++		return false;
++	}
++
++	return CSimplePvPSensor<CCSSBot>::IsFriendly(entity);
++}
++
++bool CCSSBotSensor::IsEnemy(CBaseEntity* entity) const
++{
++	if (podbot::PodBot().IsFreeForAll(GetBot<CCSSBot>()))
++	{
++		// anybody on a team except myself
++		return entity != GetBot<CCSSBot>()->GetEntity() && modhelpers->GetEntityTeamNumber(entity) >= static_cast<int>(counterstrikesource::CSSTeam::TERRORIST);
++	}
++
++	return CSimplePvPSensor<CCSSBot>::IsEnemy(entity);
++}
+diff --git a/extension/bot/css/cssbot_sensor.h b/extension/bot/css/cssbot_sensor.h
+index cd305a1..4416235 100644
+--- a/extension/bot/css/cssbot_sensor.h
++++ b/extension/bot/css/cssbot_sensor.h
+@@ -10,6 +10,9 @@ class CCSSBotSensor : public CSimplePvPSensor<CCSSBot>
+ public:
+ 	CCSSBotSensor(CCSSBot* bot);
+ 
++	// PODBot free-for-all mode (pb_ffa): everybody except me is an enemy
++	bool IsFriendly(CBaseEntity* entity) const override;
++	bool IsEnemy(CBaseEntity* entity) const override;
+ 
+ private:
+ 
+diff --git a/extension/bot/css/tasks/cssbot_follow_player_task.cpp b/extension/bot/css/tasks/cssbot_follow_player_task.cpp
+new file mode 100644
+index 0000000..57062da
+--- /dev/null
++++ b/extension/bot/css/tasks/cssbot_follow_player_task.cpp
+@@ -0,0 +1,77 @@
++#include NAVBOT_PCH_FILE
++#include <bot/css/cssbot.h>
++#include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
++#include "cssbot_follow_player_task.h"
++
++CCSSBotFollowPlayerTask::CCSSBotFollowPlayerTask(CCSSBot* bot, int clientIndex, float duration, float followRange) :
++	m_client(clientIndex), m_duration(duration), m_range(followRange), m_pathcost(bot)
++{
++}
++
++TaskResult<CCSSBot> CCSSBotFollowPlayerTask::OnTaskStart(CCSSBot* bot, AITask<CCSSBot>* pastTask)
++{
++	m_timer.Start(m_duration);
++	m_counter.Reset();
++	return Continue();
++}
++
++TaskResult<CCSSBot> CCSSBotFollowPlayerTask::OnTaskUpdate(CCSSBot* bot)
++{
++	if (m_timer.IsElapsed())
++	{
++		return Done("Done following!");
++	}
++
++	SourceMod::IGamePlayer* gp = playerhelpers->GetGamePlayer(m_client);
++
++	if (gp == nullptr || !gp->IsInGame())
++	{
++		return Done("The player I was following left!");
++	}
++
++	CBaseExtPlayer human(gp->GetEdict());
++
++	if (!human.IsAlive())
++	{
++		return Done("The player I was following died!");
++	}
++
++	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
++
++	if (threat && threat->GetLastKnownArea() != nullptr && bot->GetMovementInterface()->IsAreaTraversable(threat->GetLastKnownArea()))
++	{
++		if (bot->GetBehaviorInterface()->ShouldSeekAndDestroy(bot, threat) != ANSWER_NO)
++		{
++			return PauseFor(new CBotSharedDefaultCombatBehaviorTask<CCSSBot, CCSSBotPathCost>(), "Attacking visible enemy!");
++		}
++	}
++
++	const Vector goal = human.GetAbsOrigin();
++
++	if (bot->GetRangeTo(goal) > m_range)
++	{
++		m_nav.Update(bot, goal, m_pathcost);
++	}
++
++	return Continue();
++}
++
++TaskEventResponseResult<CCSSBot> CCSSBotFollowPlayerTask::OnStuck(CCSSBot* bot)
++{
++	if (m_counter.Increase())
++	{
++		return TryDone(PRIORITY_HIGH, "Stuck while following!");
++	}
++
++	return TryToMaintain();
++}
++
++TaskEventResponseResult<CCSSBot> CCSSBotFollowPlayerTask::OnMoveToFailure(CCSSBot* bot, CPath* path, IEventListener::MovementFailureType reason)
++{
++	if (m_counter.Increase())
++	{
++		return TryDone(PRIORITY_HIGH, "Cannot reach the player!");
++	}
++
++	return TryToMaintain();
++}
+diff --git a/extension/bot/css/tasks/cssbot_follow_player_task.h b/extension/bot/css/tasks/cssbot_follow_player_task.h
+new file mode 100644
+index 0000000..c068c6d
+--- /dev/null
++++ b/extension/bot/css/tasks/cssbot_follow_player_task.h
+@@ -0,0 +1,31 @@
++#ifndef __NAVBOT_CSS_BOT_FOLLOW_PLAYER_TASK_H_
++#define __NAVBOT_CSS_BOT_FOLLOW_PLAYER_TASK_H_
++
++#include <bot/interfaces/path/meshnavigator.h>
++#include <sdkports/sdk_timers.h>
++
++// PODBot "Follow Me": the bot walks to a human player and stays within range of them for a while.
++class CCSSBotFollowPlayerTask : public AITask<CCSSBot>
++{
++public:
++	CCSSBotFollowPlayerTask(CCSSBot* bot, int clientIndex, float duration, float followRange = 200.0f);
++
++	TaskResult<CCSSBot> OnTaskStart(CCSSBot* bot, AITask<CCSSBot>* pastTask) override;
++	TaskResult<CCSSBot> OnTaskUpdate(CCSSBot* bot) override;
++
++	TaskEventResponseResult<CCSSBot> OnStuck(CCSSBot* bot) override;
++	TaskEventResponseResult<CCSSBot> OnMoveToFailure(CCSSBot* bot, CPath* path, IEventListener::MovementFailureType reason) override;
++
++	const char* GetName() const override { return "FollowPlayer"; }
++
++private:
++	int m_client;
++	float m_duration;
++	float m_range;
++	CountdownTimer m_timer;
++	CCSSBotPathCost m_pathcost;
++	CMeshNavigatorAutoRepath m_nav;
++	CPathFailCounter m_counter;
++};
++
++#endif // !__NAVBOT_CSS_BOT_FOLLOW_PLAYER_TASK_H_
+diff --git a/extension/bot/css/tasks/cssbot_main_task.cpp b/extension/bot/css/tasks/cssbot_main_task.cpp
+index a1ec8bf..f76f636 100644
+--- a/extension/bot/css/tasks/cssbot_main_task.cpp
++++ b/extension/bot/css/tasks/cssbot_main_task.cpp
+@@ -6,6 +6,9 @@
+ #include <bot/tasks_shared/bot_shared_debug_move_to_origin.h>
+ #include "cssbot_tactical_task.h"
+ #include "cssbot_main_task.h"
++#include "cssbot_follow_player_task.h"
++#include <sdkports/sdk_takedamageinfo.h>
++#include <podbot/podbot_manager.h>
+ 
+ AITask<CCSSBot>* CCSSBotMainTask::InitialNextTask(CCSSBot* bot)
+ {
+@@ -29,9 +32,44 @@ TaskEventResponseResult<CCSSBot> CCSSBotMainTask::OnDebugMoveToCommand(CCSSBot*
+ 
+ TaskEventResponseResult<CCSSBot> CCSSBotMainTask::OnKilled(CCSSBot* bot, const CTakeDamageInfo& info)
+ {
++	podbot::PodBot().OnBotKilled(bot);
+ 	return TrySwitchTo(new CBotSharedDeadTask<CCSSBot, CCSSBotMainTask>(), PRIORITY_CRITICAL, "I am dead!");
+ }
+ 
++TaskEventResponseResult<CCSSBot> CCSSBotMainTask::OnOtherKilled(CCSSBot* bot, CBaseEntity* pVictim, const CTakeDamageInfo& info)
++{
++	podbot::PodBot().OnOtherKilled(bot, pVictim, info.GetAttacker());
++	return TryContinue();
++}
++
++TaskEventResponseResult<CCSSBot> CCSSBotMainTask::OnVoiceCommand(CCSSBot* bot, CBaseEntity* subject, int command)
++{
++	if (command == podbot::kVoiceFollowMe)
++	{
++		return TryPauseFor(new CCSSBotFollowPlayerTask(bot, UtilHelpers::IndexOfEntity(subject), podbot::PodBot().GetFollowDuration()), PRIORITY_HIGH, "Following a player!");
++	}
++
++	return TryContinue();
++}
++
++TaskEventResponseResult<CCSSBot> CCSSBotMainTask::OnInjured(CCSSBot* bot, const CTakeDamageInfo& info)
++{
++	podbot::PodBot().OnInjured(bot);
++	return TryContinue();
++}
++
++TaskEventResponseResult<CCSSBot> CCSSBotMainTask::OnSight(CCSSBot* bot, CBaseEntity* subject)
++{
++	podbot::PodBot().OnSight(bot, subject);
++	return TryContinue();
++}
++
++TaskEventResponseResult<CCSSBot> CCSSBotMainTask::OnBombPlanted(CCSSBot* bot, const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent)
++{
++	podbot::PodBot().OnBombPlanted(bot);
++	return TryContinue();
++}
++
+ Vector CCSSBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim)
+ {
+ 	return m_aim.SelectAimPosition(static_cast<CCSSBot*>(me), entity, desiredAim);
+diff --git a/extension/bot/css/tasks/cssbot_main_task.h b/extension/bot/css/tasks/cssbot_main_task.h
+index eeb04c4..db81dcc 100644
+--- a/extension/bot/css/tasks/cssbot_main_task.h
++++ b/extension/bot/css/tasks/cssbot_main_task.h
+@@ -14,6 +14,11 @@ public:
+ 
+ 	TaskEventResponseResult<CCSSBot> OnDebugMoveToCommand(CCSSBot* bot, const Vector& moveTo) override;
+ 	TaskEventResponseResult<CCSSBot> OnKilled(CCSSBot* bot, const CTakeDamageInfo& info) override;
++	TaskEventResponseResult<CCSSBot> OnOtherKilled(CCSSBot* bot, CBaseEntity* pVictim, const CTakeDamageInfo& info) override;
++	TaskEventResponseResult<CCSSBot> OnVoiceCommand(CCSSBot* bot, CBaseEntity* subject, int command) override;
++	TaskEventResponseResult<CCSSBot> OnInjured(CCSSBot* bot, const CTakeDamageInfo& info) override;
++	TaskEventResponseResult<CCSSBot> OnSight(CCSSBot* bot, CBaseEntity* subject) override;
++	TaskEventResponseResult<CCSSBot> OnBombPlanted(CCSSBot* bot, const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent) override;
+ 
+ 	Vector GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim = AIMSPOT_NONE) override;
+ 	Vector GetAimPosition(CBaseBot* me, const Vector& pos, botweapons::AttackType attacktype = botweapons::AttackType::MAX_ATTACK_TYPES) override;
+diff --git a/extension/bot/css/tasks/scenario/cssbot_guard_bomb_site_task.cpp b/extension/bot/css/tasks/scenario/cssbot_guard_bomb_site_task.cpp
+index 0249e54..a467773 100644
+--- a/extension/bot/css/tasks/scenario/cssbot_guard_bomb_site_task.cpp
++++ b/extension/bot/css/tasks/scenario/cssbot_guard_bomb_site_task.cpp
+@@ -4,6 +4,7 @@
+ #include <bot/interfaces/path/meshnavigator.h>
+ #include <bot/tasks_shared/bot_shared_defend_spot.h>
+ #include "cssbot_guard_bomb_site_task.h"
++#include <podbot/podbot_manager.h>
+ 
+ AITask<CCSSBot>* CCSSBotGuardBombSiteTask::InitialNextTask(CCSSBot* bot)
+ {
+@@ -14,7 +15,16 @@ AITask<CCSSBot>* CCSSBotGuardBombSiteTask::InitialNextTask(CCSSBot* bot)
+ 	{
+ 		Vector pos = UtilHelpers::getWorldSpaceCenter(site);
+ 		pos = trace::getground(pos);
+-		const float maxtime = CBaseBot::s_botrng.GetRandomReal<float>(settings->GetCampMinTime(), settings->GetCampMaxTime());
++
++		// PODBot map hint: camp at a spot near the site instead of in the middle of it
++		float spot[3];
++
++		if (podbot::PodBot().PickCampSpot(bot, pos.x, pos.y, 1500.0f, spot))
++		{
++			pos = Vector(spot[0], spot[1], spot[2]);
++		}
++
++		const float maxtime = podbot::PodBot().CapCampTime(bot, CBaseBot::s_botrng.GetRandomReal<float>(settings->GetCampMinTime(), settings->GetCampMaxTime()));
+ 		return new CBotSharedDefendSpotTask<CCSSBot, CCSSBotPathCost>(bot, pos, maxtime, true);
+ 	}
+ 
+diff --git a/extension/bot/interfaces/playercontrol.cpp b/extension/bot/interfaces/playercontrol.cpp
+index 6a1682c..3074301 100644
+--- a/extension/bot/interfaces/playercontrol.cpp
++++ b/extension/bot/interfaces/playercontrol.cpp
+@@ -232,7 +232,15 @@ void IPlayerController::RunLook()
+ 
+ 	constexpr auto tolerance = IPlayerController::AIM_ON_TARGET_DOT_TOLERANCE;
+ 	auto eyepos = me->GetEyeOrigin();
+-	auto to = m_looktarget - eyepos;
++	Vector aimTarget = m_looktarget;
++
++	if (m_aimOverride)
++	{
++		aimTarget = m_aimOverride->AdjustTarget(me, m_looktarget, m_lookentity.IsValid());
++	}
++
++	auto to = aimTarget - eyepos;
++	const float aimDistance = to.Length();
+ 	to.NormalizeInPlace();
+ 	QAngle desiredAngles;
+ 	VectorAngles(to, desiredAngles);
+@@ -263,8 +271,11 @@ void IPlayerController::RunLook()
+ 		m_isOnTarget = false; // aim is off target
+ 	}
+ 
+-	finalAngles.x = ApproachAngle(desiredAngles.x, currentAngles.x, m_aimSpeed * deltaTime);
+-	finalAngles.y = ApproachAngle(desiredAngles.y, currentAngles.y, m_aimSpeed * deltaTime);
++	if (!m_aimOverride || !m_aimOverride->Turn(me, currentAngles, desiredAngles, m_lookentity.IsValid(), aimDistance, deltaTime, finalAngles))
++	{
++		finalAngles.x = ApproachAngle(desiredAngles.x, currentAngles.x, m_aimSpeed * deltaTime);
++		finalAngles.y = ApproachAngle(desiredAngles.y, currentAngles.y, m_aimSpeed * deltaTime);
++	}
+ 
+ 	finalAngles.x = AngleNormalize(finalAngles.x);
+ 	// Matches the default limits for PITCH angles. See https://github.com/ValveSoftware/source-sdk-2013/blob/b8cfb12c0e083a2ef5b2f9f9b50f3902fa034474/src/game/client/in_main.cpp#L68-L69
+diff --git a/extension/bot/interfaces/playercontrol.h b/extension/bot/interfaces/playercontrol.h
+index 4400bfb..678aa27 100644
+--- a/extension/bot/interfaces/playercontrol.h
++++ b/extension/bot/interfaces/playercontrol.h
+@@ -5,6 +5,7 @@
+ #include <string_view>
+ #include <string>
+ #include <array>
++#include <memory>
+ 
+ #include <sdkports/sdk_ehandle.h>
+ #include <bot/interfaces/base_interface.h>
+@@ -12,12 +13,27 @@
+ #include <bot/interfaces/decisionquery.h>
+ 
+ struct edict_t;
++class Vector;
++class QAngle;
++class CBaseBot;
++
++// Optional hook that replaces how a bot's view is aimed (used by the PODBot layer).
++class IAimOverride
++{
++public:
++	virtual ~IAimOverride() = default;
++	// Lets the override shift the point being aimed at (for example skill based aim error).
++	virtual Vector AdjustTarget(CBaseBot* bot, const Vector& target, bool isEntity) = 0;
++	// Writes the new view angles to 'out' and returns true, or returns false to use the default turn.
++	virtual bool Turn(CBaseBot* bot, const QAngle& current, const QAngle& desired, bool hasTarget, float distance, float dt, QAngle& out) = 0;
++};
+ 
+ // Interface responsible for controller the bot's input
+ class IPlayerController : public IBotInterface, public IPlayerInput
+ {
+ public:
+ 	IPlayerController(CBaseBot* bot);
++	void SetAimOverride(std::shared_ptr<IAimOverride> override) { m_aimOverride = std::move(override); }
+ 	~IPlayerController() override;
+ 	
+ 	static constexpr auto AIM_ON_TARGET_DOT_TOLERANCE = 0.995f; // Dot product result must be larger than this to consider the aim to be on target
+@@ -187,6 +203,7 @@ private:
+ 	QAngle m_snapToAngles;
+ 	IntervalTimer m_steadyTimer; // Aim stability timer
+ 	float m_aimSpeed;
++	std::shared_ptr<IAimOverride> m_aimOverride;
+ 	CountdownTimer m_trackingUpdateTimer; // Timer for tracking entities
+ 
+ 	IDecisionQuery::DesiredAimSpot m_desiredAimSpot;
+diff --git a/extension/mods/css/css_mod.cpp b/extension/mods/css/css_mod.cpp
+index 35ccf1f..e0c7150 100644
+--- a/extension/mods/css/css_mod.cpp
++++ b/extension/mods/css/css_mod.cpp
+@@ -2,6 +2,7 @@
+ #include <bot/css/cssbot.h>
+ #include "nav/css_nav_mesh.h"
+ #include "css_mod.h"
++#include <podbot/podbot_manager.h>
+ 
+ #ifdef EXT_VPROF_ENABLED
+ #include <tier0/vprof.h>
+@@ -37,6 +38,7 @@ CCounterStrikeSourceMod::CCounterStrikeSourceMod()
+ 	ListenForGameEvent("flashbang_detonate");
+ 	ListenForGameEvent("bomb_planted");
+ 	ListenForGameEvent("hostage_follows");
++	ListenForGameEvent("player_say");
+ 
+ 	std::fill(m_teammoney.begin(), m_teammoney.end(), 0);
+ 	m_bombactive = false;
+@@ -63,6 +65,10 @@ void CCounterStrikeSourceMod::FireGameEvent(IGameEvent* event)
+ 		{
+ 			OnRoundEnd();
+ 		}
++		else if (std::strcmp(name, "player_say") == 0)
++		{
++			podbot::PodBot().OnPlayerSay(event->GetInt("userid"), event->GetString("text"));
++		}
+ 		else if (std::strcmp(name, "flashbang_detonate") == 0)
+ 		{
+ 			Vector pos{ event->GetFloat("x"), event->GetFloat("y"), event->GetFloat("z") };
+@@ -137,9 +143,39 @@ void CCounterStrikeSourceMod::OnRoundStart()
+ 	}
+ }
+ 
++void CCounterStrikeSourceMod::OnMapStart()
++{
++	CBaseMod::OnMapStart();
++	podbot::PodBot().OnMapStart();
++}
++
++void CCounterStrikeSourceMod::OnMapEnd()
++{
++	CBaseMod::OnMapEnd();
++	podbot::PodBot().OnMapEnd();
++}
++
++void CCounterStrikeSourceMod::OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CConCommandArgs& args)
++{
++	CBaseMod::OnClientCommand(pEdict, player, args);
++
++	// the "Follow Me" radio command
++	if (player != nullptr && args.ArgC() > 0 && strcasecmp(args[0], "followme") == 0)
++	{
++		podbot::PodBot().OnFollowMe(player->GetIndex());
++	}
++}
++
++void CCounterStrikeSourceMod::Update()
++{
++	CBaseMod::Update();
++	podbot::PodBot().Update();
++}
++
+ void CCounterStrikeSourceMod::OnRoundEnd()
+ {
+ 	CBaseMod::OnRoundEnd();
++	podbot::PodBot().OnRoundEnd();
+ 	RoundReset();
+ }
+ 
+@@ -238,10 +274,33 @@ void CCounterStrikeSourceMod::BuyWeapons(CCSSBot* bot) const
+ 
+ 	auto& mgr = GetBuyManager();
+ 
++	// PODBot layer: personality weapon priorities, team tables and restrictions from the PODBot config files
++	podbot::BuyPlan plan;
++	const bool podbuy = podbot::PodBot().GetBuyPlan(bot, plan);
++
++	if (podbuy && plan.jasonMode)
++	{
++		return;
++	}
++
++	std::vector<std::string> primariesList;
++	std::vector<std::string> secondariesList;
++
++	if (podbuy)
++	{
++		primariesList = plan.primaries;
++		secondariesList = plan.secondaries;
++	}
++	else
++	{
++		primariesList.assign(profile->m_primaries.begin(), profile->m_primaries.end());
++		secondariesList.assign(profile->m_secondaries.begin(), profile->m_secondaries.end());
++	}
++
+ 	constexpr auto armoritemname = "vesthelm"sv;
+ 
+ 	// armor
+-	if (bot->GetDifficultyProfile()->GetGameAwareness() >= 40)
++	if (bot->GetDifficultyProfile()->GetGameAwareness() >= 40 && !(podbuy && plan.noArmor))
+ 	{
+ 		if (bot->GetArmorAmount() < 100 || !csslib::HasHelmetEquipped(bot->GetEntity()))
+ 		{
+@@ -255,7 +314,7 @@ void CCounterStrikeSourceMod::BuyWeapons(CCSSBot* bot) const
+ 
+ 	if (inventory->FindWeaponBySlot(counterstrikesource::CSS_WEAPON_SLOT_PRIMARY) == nullptr)
+ 	{
+-		for (auto& weapon : profile->m_primaries)
++		for (auto& weapon : primariesList)
+ 		{
+ 			if (!weapon.empty())
+ 			{
+@@ -270,7 +329,7 @@ void CCounterStrikeSourceMod::BuyWeapons(CCSSBot* bot) const
+ 	constexpr auto defuseritemname = "defuser"sv;
+ 
+ 	if (myteam == counterstrikesource::CSSTeam::COUNTERTERRORIST &&
+-		!csslib::HasDefuser(bot->GetEntity()) &&
++		!csslib::HasDefuser(bot->GetEntity()) && !(podbuy && plan.noDefuser) &&
+ 		CBaseBot::s_botrng.GetRandomChance(profile->m_defuserchance))
+ 	{
+ 		TryBuyingItem(bot, mgr, money, defuseritemname.data());
+@@ -282,17 +341,17 @@ void CCounterStrikeSourceMod::BuyWeapons(CCSSBot* bot) const
+ 		constexpr auto flashitemname = "flashbang"sv;
+ 		constexpr auto smokeitemname = "smokegrenade"sv;
+ 
+-		if (inventory->FindWeaponByClassname("weapon_hegrenade") == nullptr && CBaseBot::s_botrng.GetRandomChance(profile->m_hechance))
++		if (inventory->FindWeaponByClassname("weapon_hegrenade") == nullptr && !(podbuy && plan.noHE) && CBaseBot::s_botrng.GetRandomChance(profile->m_hechance))
+ 		{
+ 			TryBuyingItem(bot, mgr, money, heitemname.data());
+ 		}
+ 
+-		if (inventory->FindWeaponByClassname("weapon_flashbang") == nullptr && CBaseBot::s_botrng.GetRandomChance(profile->m_flashchance))
++		if (inventory->FindWeaponByClassname("weapon_flashbang") == nullptr && !(podbuy && plan.noFlash) && CBaseBot::s_botrng.GetRandomChance(profile->m_flashchance))
+ 		{
+ 			TryBuyingItem(bot, mgr, money, flashitemname.data());
+ 		}
+ 
+-		if (inventory->FindWeaponByClassname("weapon_smokegrenade") == nullptr && CBaseBot::s_botrng.GetRandomChance(profile->m_smokechance))
++		if (inventory->FindWeaponByClassname("weapon_smokegrenade") == nullptr && !(podbuy && plan.noSmoke) && CBaseBot::s_botrng.GetRandomChance(profile->m_smokechance))
+ 		{
+ 			TryBuyingItem(bot, mgr, money, smokeitemname.data());
+ 		}
+@@ -300,7 +359,7 @@ void CCounterStrikeSourceMod::BuyWeapons(CCSSBot* bot) const
+ 
+ 	if (money >= profile->m_minmoneyforsecupgrade && inventory->HasStartingPistol())
+ 	{
+-		for (auto& weapon : profile->m_secondaries)
++		for (auto& weapon : secondariesList)
+ 		{
+ 			if (!weapon.empty())
+ 			{
+diff --git a/extension/mods/css/css_mod.h b/extension/mods/css/css_mod.h
+index 06bc924..c7f0939 100644
+--- a/extension/mods/css/css_mod.h
++++ b/extension/mods/css/css_mod.h
+@@ -47,6 +47,10 @@ public:
+ 	void FireGameEvent(IGameEvent* event) override;
+ 	CBaseBot* AllocateBot(edict_t* edict) override;
+ 	void OnRoundStart() override;
++	void OnMapStart() override;
++	void OnMapEnd() override;
++	void OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CConCommandArgs& args) override;
++	void Update() override;
+ 	void OnRoundEnd() override;
+ 	CNavMesh* NavMeshFactory() override;
+ 	bool IsTeamBasedGame() const override { return true; }
+diff --git a/extension/podbot/podbot_aim.cpp b/extension/podbot/podbot_aim.cpp
+new file mode 100644
+index 0000000..e6022b5
+--- /dev/null
++++ b/extension/podbot/podbot_aim.cpp
+@@ -0,0 +1,108 @@
++#include "podbot_aim.h"
++
++#include <algorithm>
++#include <cmath>
++
++namespace podbot {
++
++namespace {
++constexpr float kRadToDeg = 57.29577951f;
++float Clamp(float v, float lo, float hi) { return std::max(lo, std::min(hi, v)); }
++}
++
++AimParams AimParams::FromSettings(const Settings& s)
++{
++	AimParams p;
++	p.type = s.GetInt("pb_aim_type", p.type);
++	p.stiffX = s.GetFloat("pb_aim_spring_stiffness_x", p.stiffX);
++	p.stiffY = s.GetFloat("pb_aim_spring_stiffness_y", p.stiffY);
++	p.dampX = s.GetFloat("pb_aim_damper_coefficient_x", p.dampX);
++	p.dampY = s.GetFloat("pb_aim_damper_coefficient_y", p.dampY);
++	p.dampScale = s.GetFloat("pb_aim_damping_scale", p.dampScale);
++	p.devX = s.GetFloat("pb_aim_deviation_x", p.devX);
++	p.devY = s.GetFloat("pb_aim_deviation_y", p.devY);
++	p.infXonY = s.GetFloat("pb_aim_influence_x_on_y", p.infXonY);
++	p.infYonX = s.GetFloat("pb_aim_influence_y_on_x", p.infYonX);
++	p.offsetDelay = s.GetFloat("pb_aim_offset_delay", p.offsetDelay);
++	p.noTargetSlowdown = s.GetFloat("pb_aim_notarget_slowdown_ratio", p.noTargetSlowdown);
++	p.anticipation = s.GetFloat("pb_aim_target_anticipation_ratio", p.anticipation);
++	return p;
++}
++
++float WrapDeg(float a)
++{
++	a = std::fmod(a + 180.0f, 360.0f);
++	if (a < 0.0f) a += 360.0f;
++	return a - 180.0f;
++}
++
++void Anticipate(const float pos[3], const float vel[3], float anticipation, float leadTime, float out[3])
++{
++	for (int i = 0; i < 3; ++i) out[i] = pos[i] + vel[i] * anticipation * leadTime;
++}
++
++void SkillAimOffset(const SkillBracket& b, Rng& rng, float out[3])
++{
++	out[0] = rng.Float(-b.offX, b.offX);
++	out[1] = rng.Float(-b.offY, b.offY);
++	out[2] = rng.Float(-b.offZ, b.offZ);
++}
++
++Angles SpringAim::Update(const Angles& desired, bool hasTarget, float maxTurn, float distance, float dt)
++{
++	if (!(dt > 0.0f)) return m_cur;
++	dt = std::min(dt, 0.1f);
++
++	if (m_p.type <= 1) {                      // "inhuman turns": snap to the target
++		m_cur = desired; m_cur.pitch = Clamp(m_cur.pitch, -89.0f, 89.0f); m_cur.yaw = WrapDeg(m_cur.yaw);
++		m_velP = m_velY = 0.0f;
++		return m_cur;
++	}
++
++	if (m_p.type == 2) {                      // constant angular velocity
++		float step = (maxTurn > 0.0f ? maxTurn : 720.0f) * dt;
++		float eP = desired.pitch - m_cur.pitch, eY = WrapDeg(desired.yaw - m_cur.yaw);
++		m_cur.pitch += Clamp(eP, -step, step);
++		m_cur.yaw = WrapDeg(m_cur.yaw + Clamp(eY, -step, step));
++		m_velP = m_velY = 0.0f;
++		return m_cur;
++	}
++
++	// spring-damper (types 3 and 4 share one model for now)
++	m_timer -= dt;
++	if (m_timer <= 0.0f) {                    // pick a new idle error offset (units)
++		m_devP = m_rng.Float(-m_p.devX, m_p.devX);
++		m_devY = m_rng.Float(-m_p.devY, m_p.devY);
++		m_timer = m_rng.Float(0.2f * m_p.offsetDelay, m_p.offsetDelay);
++	}
++	Angles target = desired;
++	if (!hasTarget && distance > 1.0f) {      // the error margin only applies when aiming at nothing
++		target.pitch += std::atan2(m_devP, distance) * kRadToDeg;
++		target.yaw += std::atan2(m_devY, distance) * kRadToDeg;
++	}
++
++	const float scale = hasTarget ? 1.0f : m_p.noTargetSlowdown;
++	const float dX = m_p.dampX * m_p.dampScale, dY = m_p.dampY * m_p.dampScale;
++	const float wP = m_p.stiffX * scale, wY = m_p.stiffY * scale;
++	const int steps = std::max(1, static_cast<int>(std::ceil(dt * 120.0f)));
++	const float h = dt / static_cast<float>(steps);
++
++	for (int i = 0; i < steps; ++i) {
++		float eP = target.pitch - m_cur.pitch;
++		float eY = WrapDeg(target.yaw - m_cur.yaw);
++		float aP = wP * wP * eP - 2.0f * dX * wP * m_velP;
++		float aY = wY * wY * eY - 2.0f * dY * wY * m_velY;
++		float aP2 = aP + m_p.infYonX * aY;     // yaw motion disturbs pitch
++		float aY2 = aY + m_p.infXonY * aP;     // pitch motion disturbs yaw
++		m_velP += aP2 * h;
++		m_velY += aY2 * h;
++		if (maxTurn > 0.0f) { m_velP = Clamp(m_velP, -maxTurn, maxTurn); m_velY = Clamp(m_velY, -maxTurn, maxTurn); }
++		m_cur.pitch += m_velP * h;
++		m_cur.yaw += m_velY * h;
++	}
++	m_cur.pitch = Clamp(m_cur.pitch, -89.0f, 89.0f);
++	m_cur.yaw = WrapDeg(m_cur.yaw);
++	return m_cur;
++}
++
++} // namespace podbot
+diff --git a/extension/podbot/podbot_aim.h b/extension/podbot/podbot_aim.h
+new file mode 100644
+index 0000000..1ce9ddf
+--- /dev/null
++++ b/extension/podbot/podbot_aim.h
+@@ -0,0 +1,56 @@
++// podbot_aim.h - PODBot-style spring-damper aim controller (SDK independent).
++//
++// Interpretation of the pb_aim_* values (tune in game):
++//   each axis is a second-order system:  acc = w^2 * error - 2 * zeta * w * velocity
++//   w    = pb_aim_spring_stiffness_*   (rad/s: speed and oscillation frequency)
++//   zeta = pb_aim_damper_coefficient_* (< 1 overshoots like a human flick)
++//   x axis = vertical (pitch), y axis = horizontal (yaw), as in podbot.cfg.
++#pragma once
++#include "podbot_data.h"
++
++namespace podbot {
++
++struct Angles { float pitch = 0.0f, yaw = 0.0f; };   // degrees
++
++struct AimParams {
++	int   type = 4;                    // pb_aim_type: 1 snap, 2 constant velocity, 3/4 spring
++	float stiffX = 13.0f, stiffY = 13.0f;
++	float dampX = 0.22f,  dampY = 0.22f;
++	float dampScale = 1.0f;                    // pb_aim_damping_scale (CS:S edition): multiplies both damper values
++	float devX = 2.0f,    devY = 1.0f;          // idle error margin (game units)
++	float infXonY = 0.25f, infYonX = 0.17f;     // cross-axis disturbance
++	float offsetDelay = 1.2f;                   // seconds between new idle offsets
++	float noTargetSlowdown = 0.5f;              // speed ratio when aiming at nothing
++	float anticipation = 2.2f;                  // pb_aim_target_anticipation_ratio
++	static AimParams FromSettings(const Settings& s);
++};
++
++float WrapDeg(float a);   // to [-180, 180]
++
++// Predicted aim point: position + velocity * anticipation * leadTime.
++void Anticipate(const float pos[3], const float vel[3], float anticipation, float leadTime, float out[3]);
++
++// Random aim-point offset (units) for a skill bracket (AIM_OFFS_X/Y/Z), zero at skill 100.
++void SkillAimOffset(const SkillBracket& b, Rng& rng, float out[3]);
++
++class SpringAim {
++public:
++	explicit SpringAim(const AimParams& p = AimParams(), unsigned seed = 1) : m_p(p), m_rng(seed) {}
++	void Reset(const Angles& current) { m_cur = current; m_velP = m_velY = 0.0f; m_timer = 0.0f; m_devP = m_devY = 0.0f; }
++	// desired: ideal view angles. maxTurn: angular speed cap in deg/s (0 = none).
++	// distance: units to the aim point (turns the idle error margin into an angle).
++	Angles Update(const Angles& desired, bool hasTarget, float maxTurn, float distance, float dt);
++	// Follows the real view angles (recoil, snaps) while keeping the angular velocity.
++	void SyncCurrent(const Angles& a) { m_cur = a; }
++	const Angles& Current() const { return m_cur; }
++	float VelocityPitch() const { return m_velP; }
++	float VelocityYaw() const { return m_velY; }
++private:
++	AimParams m_p;
++	Rng m_rng;
++	Angles m_cur;
++	float m_velP = 0.0f, m_velY = 0.0f;
++	float m_timer = 0.0f, m_devP = 0.0f, m_devY = 0.0f;
++};
++
++} // namespace podbot
+diff --git a/extension/podbot/podbot_commands.cpp b/extension/podbot/podbot_commands.cpp
+new file mode 100644
+index 0000000..8810d4a
+--- /dev/null
++++ b/extension/podbot/podbot_commands.cpp
+@@ -0,0 +1,50 @@
++#include NAVBOT_PCH_FILE
++#include <cstdlib>
++
++#include <extension.h>
++#include <manager.h>
++#include "podbot_manager.h"
++
++// pb add [skill [personality [team [model [name]]]]] | pb fillserver [skill [personality [team [model]]]] | pb reload
++CON_COMMAND(pb, "PODBot-style bot control: pb add|fillserver|reload")
++{
++	DECLARE_COMMAND_ARGS;
++
++	if (args.ArgC() < 2)
++	{
++		META_CONPRINT("Usage: pb add [skill [personality [team [model [name]]]]] | pb fillserver [skill [personality [team [model]]]] | pb reload\n");
++		return;
++	}
++
++	if (!extmanager->AreBotsSupported())
++	{
++		META_CONPRINT("Bot support is disabled! Check SourceMod logs for more information. \n");
++		return;
++	}
++
++	auto& pod = podbot::PodBot();
++	const char* verb = args[1];
++
++	if (strncasecmp(verb, "reload", 6) == 0)
++	{
++		pod.Load();
++	}
++	else if (strncasecmp(verb, "add", 3) == 0)
++	{
++		const int skill = args.ArgC() > 2 ? std::atoi(args[2]) : -1;
++		const int personality = args.ArgC() > 3 ? std::atoi(args[3]) : 0;
++		const std::string name = args.ArgC() > 6 ? args[6] : "";
++		const int team = args.ArgC() > 4 ? std::atoi(args[4]) : 0;
++		const int model = args.ArgC() > 5 ? std::atoi(args[5]) : 0;
++		pod.AddBot(skill, personality, name, team, model);
++	}
++	else if (strncasecmp(verb, "fillserver", 10) == 0)
++	{
++		pod.FillServer(args.ArgC() > 2 ? std::atoi(args[2]) : -1, args.ArgC() > 3 ? std::atoi(args[3]) : 0,
++			args.ArgC() > 4 ? std::atoi(args[4]) : 0, args.ArgC() > 5 ? std::atoi(args[5]) : 0);
++	}
++	else
++	{
++		META_CONPRINT("Unknown pb command.\n");
++	}
++}
+diff --git a/extension/podbot/podbot_data.cpp b/extension/podbot/podbot_data.cpp
+new file mode 100644
+index 0000000..d8d2f8a
+--- /dev/null
++++ b/extension/podbot/podbot_data.cpp
+@@ -0,0 +1,386 @@
++#include "podbot_data.h"
++
++#include <algorithm>
++#include <cctype>
++#include <cstdlib>
++#include <fstream>
++#include <set>
++
++namespace podbot {
++
++const char* const kWeaponNames[kNumWeapons] = {
++	"knife", "usp", "glock", "deagle", "p228", "elite", "fiveseven",
++	"m3", "xm1014", "mp5navy", "tmp", "p90", "mac10", "ump45",
++	"ak47", "sg552", "m4a1", "galil", "famas", "aug",
++	"scout", "awp", "g3sg1", "sg550", "m249", "shield" };
++
++namespace {
++
++std::string Trim(const std::string& s)
++{
++	size_t b = 0, e = s.size();
++	while (b < e && std::isspace(static_cast<unsigned char>(s[b]))) ++b;
++	while (e > b && std::isspace(static_cast<unsigned char>(s[e - 1]))) --e;
++	return s.substr(b, e - b);
++}
++
++std::string Upper(std::string s)
++{
++	for (auto& c : s) c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
++	return s;
++}
++
++std::string Lower(std::string s)
++{
++	for (auto& c : s) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
++	return s;
++}
++
++// Reads a text file as lines; handles CRLF. Returns false if it cannot be opened.
++bool ReadLines(const std::string& path, std::vector<std::string>& out, std::string* err)
++{
++	std::ifstream f(path);
++	if (!f) { if (err) *err = "cannot open " + path; return false; }
++	std::string line;
++	while (std::getline(f, line)) {
++		if (!line.empty() && line.back() == '\r') line.pop_back();
++		out.push_back(line);
++	}
++	return true;
++}
++
++bool IsSkippable(const std::string& trimmed) { return trimmed.empty() || trimmed[0] == '#'; }
++
++// Splits on whitespace; a "quoted string" is one token (quotes removed).
++std::vector<std::string> Tokenize(const std::string& line)
++{
++	std::vector<std::string> t;
++	size_t i = 0, n = line.size();
++	while (i < n) {
++		while (i < n && std::isspace(static_cast<unsigned char>(line[i]))) ++i;
++		if (i >= n) break;
++		if (line[i] == '"') {
++			size_t j = line.find('"', i + 1);
++			if (j == std::string::npos) j = n;
++			t.push_back(line.substr(i + 1, j - i - 1));
++			i = j + 1;
++		} else {
++			size_t j = i;
++			while (j < n && !std::isspace(static_cast<unsigned char>(line[j]))) ++j;
++			t.push_back(line.substr(i, j - i));
++			i = j;
++		}
++	}
++	return t;
++}
++
++std::vector<std::string> ExtractQuoted(const std::string& line)
++{
++	std::vector<std::string> out;
++	size_t i = 0;
++	while ((i = line.find('"', i)) != std::string::npos) {
++		size_t j = line.find('"', i + 1);
++		if (j == std::string::npos) break;
++		out.push_back(Upper(line.substr(i + 1, j - i - 1)));
++		i = j + 1;
++	}
++	return out;
++}
++
++std::string Truncate(std::string s) { if (s.size() > kMaxChatLen) s.resize(kMaxChatLen); return s; }
++
++} // namespace
++
++// ------------------------------------------------------------------ Settings
++bool Settings::Load(const std::string& path, std::string* err)
++{
++	std::vector<std::string> lines;
++	if (!ReadLines(path, lines, err)) return false;
++	m_values.clear();   // a reload replaces the old settings and "pb add" lines
++	m_cmds.clear();
++	for (const auto& raw : lines) {
++		std::string line = Trim(raw);
++		if (IsSkippable(line)) continue;
++		auto tok = Tokenize(line);
++		if (tok.empty()) continue;
++		std::string head = Lower(tok[0]);
++		if (head.rfind("pb_", 0) == 0) {
++			m_values[head] = tok.size() > 1 ? tok[1] : "";
++		} else if (head == "pb" && tok.size() > 1) {
++			ConsoleCommand c;
++			c.verb = Lower(tok[1]);
++			c.args.assign(tok.begin() + 2, tok.end());
++			m_cmds.push_back(std::move(c));
++		}
++		// anything else (e.g. "bind") is client-side and ignored
++	}
++	return true;
++}
++
++bool Settings::Has(const std::string& key) const { return m_values.count(Lower(key)) > 0; }
++
++std::string Settings::GetString(const std::string& key, const std::string& def) const
++{
++	auto it = m_values.find(Lower(key));
++	return it == m_values.end() ? def : it->second;
++}
++
++int Settings::GetInt(const std::string& key, int def) const
++{
++	auto it = m_values.find(Lower(key));
++	return (it == m_values.end() || it->second.empty()) ? def : std::atoi(it->second.c_str());
++}
++
++float Settings::GetFloat(const std::string& key, float def) const
++{
++	auto it = m_values.find(Lower(key));
++	return (it == m_values.end() || it->second.empty()) ? def : std::strtof(it->second.c_str(), nullptr);
++}
++
++bool Settings::GetBool(const std::string& key, bool def) const
++{
++	auto it = m_values.find(Lower(key));
++	if (it == m_values.end()) return def;
++	std::string v = Lower(it->second);
++	return v == "1" || v == "true" || v == "yes" || v == "on";
++}
++
++// --------------------------------------------------------------- SkillTable
++bool SkillTable::Load(const std::string& path, std::string* err)
++{
++	std::vector<std::string> lines;
++	if (!ReadLines(path, lines, err)) return false;
++	m_b.clear();
++	for (const auto& raw : lines) {
++		std::string line = Trim(raw);
++		if (IsSkippable(line)) continue;
++		auto tok = Tokenize(line);
++		if (tok.size() < 2) continue;
++		std::string key = Upper(tok[0]);
++		float v = std::strtof(tok[1].c_str(), nullptr);
++		if (key == "MIN_DELAY") m_b.emplace_back();   // each bracket starts with MIN_DELAY
++		if (m_b.empty()) continue;
++		SkillBracket& b = m_b.back();
++		if (key == "MIN_DELAY") b.minDelay = v;
++		else if (key == "MAX_DELAY") b.maxDelay = v;
++		else if (key == "MIN_TURNSPEED") b.minTurn = v;
++		else if (key == "MAX_TURNSPEED") b.maxTurn = v;
++		else if (key == "AIM_OFFS_X") b.offX = v;
++		else if (key == "AIM_OFFS_Y") b.offY = v;
++		else if (key == "AIM_OFFS_Z") b.offZ = v;
++		else if (key == "HEADSHOT_ALLOW") b.headshot = static_cast<int>(v);
++		else if (key == "HEAR_SHOOTTHRU") b.hearThru = static_cast<int>(v);
++		else if (key == "SEEN_SHOOTTHRU") b.seenThru = static_cast<int>(v);
++	}
++	if (m_b.size() != 6) {
++		if (err) *err = "botskill.cfg: expected 6 skill brackets, found " + std::to_string(m_b.size());
++		return false;
++	}
++	static const int his[6] = { 19, 39, 59, 79, 99, 100 };
++	for (size_t i = 0; i < 6; ++i) { m_b[i].lo = i ? his[i - 1] + 1 : 0; m_b[i].hi = his[i]; }
++	return true;
++}
++
++const SkillBracket& SkillTable::ForSkill(int skill) const
++{
++	static const SkillBracket empty;
++	if (m_b.empty()) return empty;
++	skill = std::max(0, std::min(100, skill));
++	for (const auto& b : m_b) if (skill <= b.hi) return b;
++	return m_b.back();
++}
++
++// ---------------------------------------------------------------- NameList
++bool NameList::Load(const std::string& path, std::string* err)
++{
++	std::vector<std::string> lines;
++	if (!ReadLines(path, lines, err)) return false;
++	m_names.clear();
++	for (const auto& raw : lines) {
++		std::string line = Trim(raw);
++		if (!IsSkippable(line)) m_names.push_back(line);
++	}
++	if (m_names.size() < 9) {
++		if (err) *err = "botnames.txt: need at least 9 names";
++		return false;
++	}
++	return true;
++}
++
++std::string NameList::Format(const std::string& base, Personality p, int skill, int mode)
++{
++	const char* prefix = p == Personality::Aggressive ? "[P*D]" : p == Personality::Defensive ? "[P0D]" : "[POD]";
++	std::string pre, suf;
++	if (mode == 1 || mode == 2) pre = std::string(prefix) + " ";
++	if (mode == 1 || mode == 3) suf = " (" + std::to_string(skill) + ")";
++	size_t used = pre.size() + suf.size();
++	size_t room = kMaxNameLen > used ? kMaxNameLen - used : 0;
++	return pre + Trim(base.substr(0, room)) + suf;
++}
++
++// ----------------------------------------------------------- WeaponTables
++bool WeaponTables::Load(const std::string& path, std::string* err)
++{
++	std::vector<std::string> lines;
++	if (!ReadLines(path, lines, err)) return false;
++	m_rows.clear();
++	std::string section;
++	for (const auto& raw : lines) {
++		std::string line = Trim(raw);
++		if (IsSkippable(line)) continue;
++		if (line.front() == '[' && line.back() == ']') { section = Upper(line.substr(1, line.size() - 2)); continue; }
++		if (section.empty()) continue;
++		WeaponRow row{};
++		int n = 0;
++		size_t pos = 0;
++		while (pos <= line.size()) {
++			size_t comma = line.find(',', pos);
++			std::string cell = Trim(line.substr(pos, comma == std::string::npos ? std::string::npos : comma - pos));
++			if (n < kNumWeapons) row[n] = std::atoi(cell.c_str());
++			++n;
++			if (comma == std::string::npos) break;
++			pos = comma + 1;
++		}
++		if (n != kNumWeapons) {
++			if (err) *err = "botweapons.cfg [" + section + "]: expected 26 entries, found " + std::to_string(n);
++			return false;
++		}
++		m_rows[section] = row;
++	}
++	for (const char* need : { "STANDARD", "NORMAL", "AGRESSIVE", "DEFENSIVE" }) {
++		if (!m_rows.count(need)) { if (err) *err = std::string("botweapons.cfg: missing section [") + need + "]"; return false; }
++	}
++	for (const char* pri : { "NORMAL", "AGRESSIVE", "DEFENSIVE" }) {
++		std::set<int> seen(m_rows[pri].begin(), m_rows[pri].end());
++		if (seen.size() != kNumWeapons || *seen.begin() != 0 || *seen.rbegin() != kNumWeapons - 1) {
++			if (err) *err = std::string("botweapons.cfg [") + pri + "]: not a permutation of 0..25";
++			return false;
++		}
++	}
++	return true;
++}
++
++bool WeaponTables::CanBuy(const std::string& table, int weapon, int team) const
++{
++	if (weapon < 0 || weapon >= kNumWeapons) return false;
++	auto it = m_rows.find(Upper(table));
++	if (it == m_rows.end()) it = m_rows.find("STANDARD");
++	if (it == m_rows.end()) return false;
++	int v = it->second[weapon];
++	return v == 2 || v == team;
++}
++
++const WeaponRow& WeaponTables::Ranking(Personality p) const
++{
++	const char* key = p == Personality::Aggressive ? "AGRESSIVE" : p == Personality::Defensive ? "DEFENSIVE" : "NORMAL";
++	return m_rows.at(key);
++}
++
++// ------------------------------------------------------------------ ChatDB
++bool ChatDB::Load(const std::string& path, std::string* err)
++{
++	std::vector<std::string> lines;
++	if (!ReadLines(path, lines, err)) return false;
++	m_killed.clear(); m_bomb.clear(); m_dead.clear(); m_unknown.clear(); m_replies.clear();
++	std::string section;
++	for (const auto& raw : lines) {
++		std::string line = Trim(raw);
++		if (IsSkippable(line)) continue;
++		if (line.front() == '[' && line.back() == ']') { section = Upper(line.substr(1, line.size() - 2)); continue; }
++		if (section == "REPLIES") {
++			if (line.rfind("@KEY", 0) == 0) { m_replies.push_back({ ExtractQuoted(line), {} }); }
++			else if (!m_replies.empty()) m_replies.back().answers.push_back(line);
++		}
++		else if (section == "KILLED") m_killed.push_back(line);
++		else if (section == "BOMBPLANT") m_bomb.push_back(line);
++		else if (section == "DEADCHAT") m_dead.push_back(line);
++		else if (section == "UNKNOWN") m_unknown.push_back(line);
++	}
++	if (m_killed.empty() || m_bomb.empty() || m_dead.size() < 9) {
++		if (err) *err = "botchat.txt: [KILLED]/[BOMBPLANT] need >=1 line and [DEADCHAT] >=9";
++		return false;
++	}
++	return true;
++}
++
++std::string ChatDB::Expand(const std::string& t, const ChatContext& c)
++{
++	std::string out;
++	for (size_t i = 0; i < t.size(); ++i) {
++		if (t[i] == '%' && i + 1 < t.size()) {
++			const std::string* rep = nullptr;
++			switch (t[i + 1]) {
++			case 'f': rep = &c.topFragger; break;
++			case 'm': rep = &c.mapName; break;
++			case 'r': rep = &c.timeLeft; break;
++			case 's': rep = &c.replyTo; break;
++			case 't': rep = &c.aliveMate; break;
++			case 'v': rep = &c.lastVictim; break;
++			}
++			if (rep) { out += *rep; ++i; continue; }
++		}
++		out += t[i];
++	}
++	return Truncate(out);
++}
++
++std::string ChatDB::Pick(const std::vector<std::string>& v, Rng& r, const ChatContext& c)
++{
++	return v.empty() ? std::string() : Expand(v[r.Index(v.size())], c);
++}
++
++std::string ChatDB::Reply(const std::string& playerText, Rng& r, const ChatContext& c) const
++{
++	std::string text = Upper(playerText);
++	for (const auto& g : m_replies) {
++		if (g.answers.empty()) continue;
++		for (const auto& kw : g.keywords)
++			if (!kw.empty() && text.find(kw) != std::string::npos)
++				return Expand(g.answers[r.Index(g.answers.size())], c);
++	}
++	return Pick(m_unknown, r, c);
++}
++
++// --------------------------------------------------------------- HintTable
++bool HintTable::Load(const std::string& path, std::string* err)
++{
++	std::vector<std::string> lines;
++	m_hints.clear();
++	if (!ReadLines(path, lines, err)) return false;
++	for (const auto& raw : lines) {
++		std::string line = Trim(raw);
++		if (IsSkippable(line)) continue;
++		auto tok = Tokenize(line);
++		if (tok.size() < 5) continue;
++		Hint h;
++		h.type = Lower(tok[0]);
++		for (int i = 0; i < 3; ++i) h.pos[i] = std::strtof(tok[1 + i].c_str(), nullptr);
++		h.team = std::atoi(tok[4].c_str());
++		for (int i = 0; i < 4 && 5 + static_cast<size_t>(i) < tok.size(); ++i) h.look[i] = std::strtof(tok[5 + i].c_str(), nullptr);
++		m_hints.push_back(std::move(h));
++	}
++	return true;
++}
++
++size_t HintTable::Count(const std::string& type) const
++{
++	size_t n = 0;
++	for (const auto& h : m_hints) if (h.type == type) ++n;
++	return n;
++}
++
++bool HintTable::Pick(const std::string& type, float x, float y, float maxDist, int team, Rng& rng, Hint& out) const
++{
++	std::vector<const Hint*> candidates;
++	for (const auto& h : m_hints) {
++		if (h.type != type) continue;
++		if (h.team != 0 && h.team != team) continue;
++		float dx = h.pos[0] - x, dy = h.pos[1] - y;
++		if (dx * dx + dy * dy <= maxDist * maxDist) candidates.push_back(&h);
++	}
++	if (candidates.empty()) return false;
++	out = *candidates[rng.Index(candidates.size())];
++	return true;
++}
++
++} // namespace podbot
+diff --git a/extension/podbot/podbot_data.h b/extension/podbot/podbot_data.h
+new file mode 100644
+index 0000000..fbad89a
+--- /dev/null
++++ b/extension/podbot/podbot_data.h
+@@ -0,0 +1,140 @@
++// podbot_data.h - PODBot-style data layer for the CS:S remake.
++// Standalone C++17 (no Source SDK dependency) so it can be unit tested anywhere
++// and later dropped into the NavBot extension.
++#pragma once
++#include <array>
++#include <map>
++#include <random>
++#include <string>
++#include <vector>
++
++namespace podbot {
++
++constexpr int kNumWeapons = 26;
++constexpr size_t kMaxChatLen = 127;   // Source chat limit
++constexpr size_t kMaxNameLen = 31;    // MAX_PLAYER_NAME_LENGTH (32) minus terminator
++
++// Weapon index -> CS buy alias, in PODBot's numbering (botweapons.cfg).
++extern const char* const kWeaponNames[kNumWeapons];
++
++enum class Personality { Normal = 1, Aggressive = 2, Defensive = 3 };
++
++class Rng {
++public:
++	explicit Rng(unsigned seed = std::random_device{}()) : m_(seed) {}
++	int Int(int lo, int hi) { return std::uniform_int_distribution<int>(lo, hi)(m_); }
++	float Float(float lo, float hi) { return lo >= hi ? lo : std::uniform_real_distribution<float>(lo, hi)(m_); }
++	size_t Index(size_t n) { return n ? std::uniform_int_distribution<size_t>(0, n - 1)(m_) : 0; }
++private:
++	std::mt19937 m_;
++};
++
++// ---- podbot.cfg (pb_* settings and "pb add"-style commands) ----
++struct ConsoleCommand { std::string verb; std::vector<std::string> args; };
++
++class Settings {
++public:
++	bool Load(const std::string& path, std::string* err = nullptr);
++	bool Has(const std::string& key) const;
++	std::string GetString(const std::string& key, const std::string& def = "") const;
++	int GetInt(const std::string& key, int def = 0) const;
++	float GetFloat(const std::string& key, float def = 0.0f) const;
++	bool GetBool(const std::string& key, bool def = false) const;
++	void Set(const std::string& key, const std::string& value) { m_values[key] = value; }
++	const std::vector<ConsoleCommand>& Commands() const { return m_cmds; }
++private:
++	std::map<std::string, std::string> m_values;
++	std::vector<ConsoleCommand> m_cmds;
++};
++
++// ---- botskill.cfg ----
++struct SkillBracket {
++	int lo = 0, hi = 0;                    // skill range this bracket covers
++	float minDelay = 0, maxDelay = 0;      // reaction time (seconds)
++	float minTurn = 0, maxTurn = 0;        // degrees per GoldSrc frame
++	float offX = 0, offY = 0, offZ = 0;    // aim offsets (units)
++	int headshot = 0, hearThru = 0, seenThru = 0; // percent
++};
++
++class SkillTable {
++public:
++	bool Load(const std::string& path, std::string* err = nullptr);
++	const SkillBracket& ForSkill(int skill) const;
++	size_t Size() const { return m_b.size(); }
++private:
++	std::vector<SkillBracket> m_b;
++};
++
++// ---- botnames.txt ----
++class NameList {
++public:
++	bool Load(const std::string& path, std::string* err = nullptr);
++	size_t Size() const { return m_names.size(); }
++	const std::string& Pick(Rng& rng) const { return m_names[rng.Index(m_names.size())]; }
++	// detailMode follows pb_detailnames: 0 none, 1 prefix+skill, 2 prefix, 3 skill.
++	static std::string Format(const std::string& base, Personality p, int skill, int detailMode);
++private:
++	std::vector<std::string> m_names;
++};
++
++// ---- botweapons.cfg ----
++using WeaponRow = std::array<int, kNumWeapons>;
++
++class WeaponTables {
++public:
++	bool Load(const std::string& path, std::string* err = nullptr);
++	// team: 0 = Terrorist, 1 = Counter-Terrorist. table: "STANDARD" or "AS".
++	bool CanBuy(const std::string& table, int weapon, int team) const;
++	// Weapon ids ordered from least to most desired for this personality.
++	const WeaponRow& Ranking(Personality p) const;
++private:
++	std::map<std::string, WeaponRow> m_rows;
++};
++
++// ---- botchat.txt ----
++struct ChatContext {
++	std::string topFragger, mapName, timeLeft, replyTo, aliveMate, lastVictim;
++};
++struct ReplyGroup { std::vector<std::string> keywords, answers; };
++
++class ChatDB {
++public:
++	bool Load(const std::string& path, std::string* err = nullptr);
++	const std::vector<std::string>& Killed() const { return m_killed; }
++	const std::vector<std::string>& BombPlant() const { return m_bomb; }
++	const std::vector<std::string>& DeadChat() const { return m_dead; }
++	const std::vector<std::string>& Unknown() const { return m_unknown; }
++	const std::vector<ReplyGroup>& Replies() const { return m_replies; }
++
++	std::string PickKilled(Rng& r, const ChatContext& c) const { return Pick(m_killed, r, c); }
++	std::string PickBombPlant(Rng& r, const ChatContext& c) const { return Pick(m_bomb, r, c); }
++	std::string PickDeadChat(Rng& r, const ChatContext& c) const { return Pick(m_dead, r, c); }
++	// Answer to something a player typed: first matching keyword group, else [UNKNOWN].
++	std::string Reply(const std::string& playerText, Rng& r, const ChatContext& c) const;
++	static std::string Expand(const std::string& tmpl, const ChatContext& c);
++private:
++	static std::string Pick(const std::vector<std::string>& v, Rng& r, const ChatContext& c);
++	std::vector<std::string> m_killed, m_bomb, m_dead, m_unknown;
++	std::vector<ReplyGroup> m_replies;
++};
++
++// ---- hints/<map>.hint (camp, goal, sniper and rescue spots converted from PODBot waypoints) ----
++struct Hint {
++	std::string type;        // "camp", "goal", "sniper", "rescue"
++	float pos[3] = { 0, 0, 0 };   // feet position
++	int team = 0;            // 0 any, 2 T, 3 CT
++	float look[4] = { 0, 0, 0, 0 };
++};
++
++class HintTable {
++public:
++	// Returns false when the file does not exist or is unreadable (a map without hints is normal).
++	bool Load(const std::string& path, std::string* err = nullptr);
++	size_t Count(const std::string& type) const;
++	// Random hint of this type, within maxDist (2D) of (x, y), usable by this team. False if none.
++	bool Pick(const std::string& type, float x, float y, float maxDist, int team, Rng& rng, Hint& out) const;
++private:
++	std::vector<Hint> m_hints;
++};
++
++} // namespace podbot
+diff --git a/extension/podbot/podbot_manager.cpp b/extension/podbot/podbot_manager.cpp
+new file mode 100644
+index 0000000..b13a99d
+--- /dev/null
++++ b/extension/podbot/podbot_manager.cpp
+@@ -0,0 +1,1128 @@
++#include NAVBOT_PCH_FILE
++#include <algorithm>
++#include <cmath>
++#include <filesystem>
++#include <fstream>
++#include <memory>
++
++#include <extension.h>
++#include <manager.h>
++#include <util/helpers.h>
++#include <bot/basebot.h>
++#include <bot/css/cssbot.h>
++#include <bot/interfaces/profile.h>
++#include <bot/interfaces/playercontrol.h>
++#include "podbot_manager.h"
++#include "podbot_aim.h"
++
++namespace podbot
++{
++	CPodBotManager& PodBot()
++	{
++		static CPodBotManager s_instance;
++		return s_instance;
++	}
++
++	// Replaces NavBot's capped-speed turn with the PODBot spring-damper aim and skill based aim error.
++	class PodAimOverride final : public IAimOverride
++	{
++	public:
++		PodAimOverride(const AimParams& params, const SkillBracket& bracket, unsigned seed) :
++			m_params(params), m_bracket(bracket), m_aim(params, seed), m_rng(seed * 7u + 1u)
++		{
++			// botskill.cfg gives degrees per GoldSrc frame; assume ~60 frames per second (tunable)
++			m_maxTurn = m_rng.Float(bracket.minTurn, bracket.maxTurn) * 60.0f;
++		}
++
++		Vector AdjustTarget(CBaseBot* bot, const Vector& target, bool isEntity) override
++		{
++			if (!isEntity)
++			{
++				return target;
++			}
++
++			if (gpGlobals->curtime >= m_nextOffsetTime)
++			{
++				float o[3];
++				SkillAimOffset(m_bracket, m_rng, o);
++				m_offset = Vector(o[0], o[1], o[2]);
++				m_nextOffsetTime = gpGlobals->curtime + std::max(0.2f, m_params.offsetDelay * 0.5f);
++			}
++
++			return target + m_offset;
++		}
++
++		bool Turn(CBaseBot* bot, const QAngle& current, const QAngle& desired, bool hasTarget, float distance, float dt, QAngle& out) override
++		{
++			m_aim.SyncCurrent(Angles{ current.x, current.y });
++			const Angles result = m_aim.Update(Angles{ desired.x, desired.y }, hasTarget, m_maxTurn, distance, dt);
++			out.x = result.pitch;
++			out.y = result.yaw;
++			out.z = 0.0f;
++			return true;
++		}
++
++	private:
++		AimParams m_params;
++		SkillBracket m_bracket;
++		SpringAim m_aim;
++		Rng m_rng;
++		float m_maxTurn = 0.0f;
++		float m_nextOffsetTime = 0.0f;
++		Vector m_offset = Vector(0.0f, 0.0f, 0.0f);
++	};
++
++	static std::string ConfigPath(const char* file)
++	{
++		char path[PLATFORM_MAX_PATH]{};
++		std::string rel = std::string("configs/navbot/podbot/") + file;
++		smutils->BuildPath(SourceMod::PathType::Path_SM, path, sizeof(path), "%s", rel.c_str());
++		return path;
++	}
++
++	bool CPodBotManager::Load()
++	{
++		m_loaded = false;
++		std::string err;
++
++		if (!m_settings.Load(ConfigPath("podbot.cfg"), &err) ||
++			!m_skills.Load(ConfigPath("botskill.cfg"), &err) ||
++			!m_names.Load(ConfigPath("botnames.txt"), &err) ||
++			!m_weapons.Load(ConfigPath("botweapons.cfg"), &err) ||
++			!m_chat.Load(ConfigPath("botchat.txt"), &err))
++		{
++			smutils->LogError(myself, "[PODBot] Failed to load configuration: %s", err.c_str());
++			return false;
++		}
++
++		m_loaded = true;
++		rootconsole->ConsolePrint("[PODBot] Loaded: %i names, %i chat replies.", static_cast<int>(m_names.Size()), static_cast<int>(m_chat.Replies().size()));
++		return true;
++	}
++
++	const void* CPodBotManager::ApplyProfile(CBaseBot* bot, int skill, Personality p)
++	{
++		const SkillBracket& b = m_skills.ForSkill(skill);
++		auto profile = std::make_shared<DifficultyProfile>();
++
++		profile->SetGameAwareness(skill);
++		profile->SetWeaponSkill(skill);
++		// botskill.cfg stores degrees per GoldSrc frame; assume ~60 frames per second (tunable).
++		profile->SetAimSpeed((b.minTurn + b.maxTurn) * 0.5f * 60.0f);
++		profile->SetMinRecognitionTime(std::max(0.01f, m_rng.Float(b.minDelay, b.maxDelay)));
++		profile->SetAllowHeadshots(m_rng.Int(0, 99) < b.headshot);
++
++		switch (p)
++		{
++		case Personality::Aggressive:
++			profile->SetAggressiveness(80);
++			profile->SetTeamwork(20);
++			profile->SetHealthCriticalThreshold(0.10f);
++			profile->SetHealthLowThreshold(0.30f);
++			break;
++		case Personality::Defensive:
++			profile->SetAggressiveness(10);
++			profile->SetTeamwork(60);
++			profile->SetHealthCriticalThreshold(0.25f);
++			profile->SetHealthLowThreshold(0.60f);
++			break;
++		default:
++			profile->SetAggressiveness(40);
++			profile->SetTeamwork(40);
++			break;
++		}
++
++		profile->ValidateProfileValues();
++		bot->SetDifficultyProfile(profile);
++
++		// PODBot aim: spring-damper turn + skill based aim offsets
++		const unsigned seed = static_cast<unsigned>(m_rng.Int(1, 1 << 30));
++		bot->GetControlInterface()->SetAimOverride(std::make_shared<PodAimOverride>(AimParams::FromSettings(m_settings), b, seed));
++		return profile.get();
++	}
++
++	void CPodBotManager::AddBot(int skill, int personality, const std::string& name, int team, int model)
++	{
++		if (!m_loaded && !Load())
++		{
++			return;
++		}
++
++		if (skill < 0)
++		{
++			int lo = std::max(0, std::min(100, m_settings.GetInt("pb_minbotskill", 95)));
++			int hi = std::max(lo, std::min(100, m_settings.GetInt("pb_maxbotskill", 100)));
++			skill = m_rng.Int(lo, hi);
++		}
++
++		skill = std::max(0, std::min(100, skill));
++		Personality p = (personality >= 1 && personality <= 3) ? static_cast<Personality>(personality) : static_cast<Personality>(m_rng.Int(1, 3));
++		std::string base = name.empty() ? m_names.Pick(m_rng) : name;
++		std::string full = NameList::Format(base, p, skill, m_settings.GetInt("pb_detailnames", 1));
++
++		edict_t* edict = nullptr;
++		extmanager->AddBot(&full, &edict);
++
++		if (edict == nullptr)
++		{
++			return;
++		}
++
++		CBaseBot* bot = extmanager->GetBotByIndex(gamehelpers->IndexOfEdict(edict));
++
++		if (bot == nullptr)
++		{
++			return;
++		}
++
++		const void* applied = ApplyProfile(bot, skill, p);
++		BotInfo info;
++		info.profilePtr = applied;
++		info.skill = skill;
++		info.personality = p;
++
++		// PODBot team numbers: 1 = T, 2 = CT, 5 = auto. CS:S team numbers: 2 = T, 3 = CT.
++		const std::string forced = m_settings.GetString("pb_bot_join_team", "ANY");
++
++		if (team == 1 || team == 2)
++		{
++			info.desiredTeam = team + 1;
++		}
++		else if (forced == "T" || forced == "t")
++		{
++			info.desiredTeam = 2;
++		}
++		else if (forced == "CT" || forced == "ct")
++		{
++			info.desiredTeam = 3;
++		}
++
++		const int skin = m_settings.GetInt("pb_skin", 5);
++		info.desiredClass = (skin >= 1 && skin <= 4) ? skin : ((model >= 1 && model <= 4) ? model : 0);
++		info.nextTeamAttempt = gpGlobals->curtime + 3.0f; // give NavBot's own join logic time first
++		m_info[bot] = info;
++	}
++
++	void CPodBotManager::FillServer(int skill, int personality, int team, int model)
++	{
++		int maxbots = m_settings.GetInt("pb_maxbots", 16);
++
++		if (maxbots <= 0)
++		{
++			maxbots = gpGlobals->maxClients - 1;
++		}
++
++		int players = 0;
++
++		for (int i = 1; i <= gpGlobals->maxClients; i++)
++		{
++			SourceMod::IGamePlayer* gp = playerhelpers->GetGamePlayer(i);
++
++			if (gp != nullptr && gp->IsInGame())
++			{
++				players++;
++			}
++		}
++
++		for (int i = players; i < maxbots; i++)
++		{
++			AddBot(skill, personality, std::string(), team, model);
++		}
++	}
++
++	void CPodBotManager::OnMapStart()
++	{
++		Load();
++		m_info.clear();
++		m_mapStartTime = gpGlobals->curtime;
++		m_nextUpdate = 0.0f;
++		m_startupDone = false;
++		m_lastHumans = -1;
++		m_kicked = 0;
++		m_pending.clear();
++		m_experienceMap = gamehelpers->GetCurrentMap();
++		LoadExperience();
++		m_hints = HintTable();
++		m_hints.Load(ConfigPath((std::string("hints/") + m_experienceMap + ".hint").c_str())); // no file is normal
++	}
++
++	void CPodBotManager::Update()
++	{
++		if (!m_loaded)
++		{
++			return;
++		}
++
++		const float now = gpGlobals->curtime;
++		ProcessChat(now);
++
++		if (now < m_nextUpdate)
++		{
++			return;
++		}
++
++		m_nextUpdate = now + 1.0f;
++
++		if (!m_startupDone)
++		{
++			if (now >= m_mapStartTime + m_settings.GetFloat("pb_mapstartbotdelay", 10.0f))
++			{
++				m_startupDone = true;
++				RunStartupCommands();
++			}
++
++			return;
++		}
++
++		// forget bots that left the game
++		std::unordered_set<const CBaseBot*> live;
++		auto collect = [&live](CBaseBot* bot) { live.insert(bot); };
++		extmanager->ForEachBot(collect);
++
++		for (auto it = m_info.begin(); it != m_info.end();)
++		{
++			it = live.count(it->first) ? std::next(it) : m_info.erase(it);
++		}
++
++		ReapplyProfiles();
++		UpdateAutoKill(now);
++		UpdateTeams(now);
++
++		const int maxbots = m_settings.GetInt("pb_maxbots", 16);
++
++		if (maxbots <= 0) // 0 disables the automatic add and kick
++		{
++			return;
++		}
++
++		int humans = 0;
++
++		for (int i = 1; i <= gpGlobals->maxClients; i++)
++		{
++			SourceMod::IGamePlayer* gp = playerhelpers->GetGamePlayer(i);
++
++			if (gp != nullptr && gp->IsInGame() && !gp->IsFakeClient() && !gp->IsSourceTV())
++			{
++				humans++;
++			}
++		}
++
++		const int bots = static_cast<int>(live.size());
++		const int minbots = std::max(0, m_settings.GetInt("pb_minbots", 0));
++		const int limit = std::min(maxbots, gpGlobals->maxClients - 1); // always leave one slot for a human
++		const int match = m_settings.GetInt("pb_bot_quota_match", 0);
++
++		if (match > 0)
++		{
++			// bots follow the number of humans (humans * pb_bot_quota_match), inside the min/max limits
++			const int target = std::max(minbots, std::min(limit, humans * match));
++
++			if (bots < target)
++			{
++				AddBot();
++			}
++			else if (bots > target)
++			{
++				extmanager->RemoveRandomBot("PODBot quota");
++			}
++
++			m_lastHumans = humans;
++			return;
++		}
++
++		if (m_lastHumans < 0)
++		{
++			m_lastHumans = humans;
++		}
++
++		if (humans > m_lastHumans && bots > minbots)
++		{
++			extmanager->RemoveRandomBot("Making room for a player");
++			m_kicked++;
++			m_lastHumans++;
++			return;
++		}
++
++		if (humans < m_lastHumans)
++		{
++			if (m_kicked > 0 && humans + bots < limit)
++			{
++				AddBot();
++				m_kicked--;
++			}
++
++			m_lastHumans--;
++			return;
++		}
++
++		m_lastHumans = humans;
++
++		if (humans + bots > limit && bots > minbots) // server became too full
++		{
++			extmanager->RemoveRandomBot("Server is full");
++		}
++	}
++
++	void CPodBotManager::RunStartupCommands()
++	{
++		if (!m_loaded && !Load())
++		{
++			return;
++		}
++
++		for (const auto& cmd : m_settings.Commands())
++		{
++			if (cmd.verb == "add")
++			{
++				int skill = cmd.args.size() > 0 ? std::atoi(cmd.args[0].c_str()) : -1;
++				int pers = cmd.args.size() > 1 ? std::atoi(cmd.args[1].c_str()) : 0;
++				const int team = cmd.args.size() > 2 ? std::atoi(cmd.args[2].c_str()) : 0;
++				const int model = cmd.args.size() > 3 ? std::atoi(cmd.args[3].c_str()) : 0;
++				std::string name = cmd.args.size() > 4 ? cmd.args[4] : std::string();
++				AddBot(skill, pers, name, team, model);
++			}
++			else if (cmd.verb == "fillserver")
++			{
++				FillServer(cmd.args.size() > 0 ? std::atoi(cmd.args[0].c_str()) : -1, cmd.args.size() > 1 ? std::atoi(cmd.args[1].c_str()) : 0,
++					cmd.args.size() > 2 ? std::atoi(cmd.args[2].c_str()) : 0, cmd.args.size() > 3 ? std::atoi(cmd.args[3].c_str()) : 0);
++			}
++		}
++	}
++
++	bool CPodBotManager::GetBuyPlan(CCSSBot* bot, BuyPlan& plan)
++	{
++		BotInfo* info = Find(bot);
++
++		if (info == nullptr || !m_loaded)
++		{
++			return false;
++		}
++
++		plan = BuyPlan();
++		plan.jasonMode = m_settings.GetBool("pb_jasonmode", false);
++
++		const std::string equip = m_settings.GetString("pb_restrequipammo");
++		auto restrictedEquip = [&equip](size_t i) { return i < equip.size() && equip[i] == '1'; };
++		plan.noArmor = restrictedEquip(1);
++		plan.noFlash = restrictedEquip(2);
++		plan.noHE = restrictedEquip(3);
++		plan.noSmoke = restrictedEquip(4);
++		plan.noDefuser = restrictedEquip(5);
++
++		const int team = bot->GetMyCSSTeam() == counterstrikesource::CSSTeam::TERRORIST ? 0 : 1;
++		const std::string restricted = m_settings.GetString("pb_restrweapons");
++		const std::string map = gamehelpers->GetCurrentMap();
++		const char* table = map.rfind("as_", 0) == 0 ? "AS" : "STANDARD";
++		const WeaponRow& ranking = m_weapons.Ranking(info->personality); // least to most desired
++
++		for (int i = kNumWeapons - 1; i >= 0; --i)
++		{
++			const int w = ranking[i];
++
++			if (w == 0 || w == 25) // knife; shield does not exist in CS:S
++			{
++				continue;
++			}
++
++			if (!m_weapons.CanBuy(table, w, team))
++			{
++				continue;
++			}
++
++			if (static_cast<size_t>(w) < restricted.size() && restricted[w] == '1')
++			{
++				continue;
++			}
++
++			if (w >= 1 && w <= 6)
++			{
++				plan.secondaries.push_back(kWeaponNames[w]);
++			}
++			else
++			{
++				plan.primaries.push_back(kWeaponNames[w]);
++			}
++		}
++
++		return true;
++	}
++
++	CPodBotManager::BotInfo* CPodBotManager::Find(const CBaseBot* bot)
++	{
++		auto it = m_info.find(bot);
++		return it == m_info.end() ? nullptr : &it->second;
++	}
++
++	bool CPodBotManager::ChatAllowed(const CBaseBot* bot, BotInfo& info, const char* chanceKey, int defaultChance)
++	{
++		if (!m_loaded || !m_settings.GetBool("pb_chat", true))
++		{
++			return false;
++		}
++
++		const float now = gpGlobals->curtime;
++
++		if (now < info.nextChatTime)
++		{
++			return false;
++		}
++
++		if (m_rng.Int(0, 99) >= m_settings.GetInt(chanceKey, defaultChance))
++		{
++			return false;
++		}
++
++		info.nextChatTime = now + m_settings.GetFloat("pb_chat_cooldown", 8.0f);
++		return true;
++	}
++
++	static std::string PlayerName(CBaseEntity* entity)
++	{
++		if (entity == nullptr)
++		{
++			return std::string();
++		}
++
++		SourceMod::IGamePlayer* gp = playerhelpers->GetGamePlayer(UtilHelpers::IndexOfEntity(entity));
++		return (gp != nullptr && gp->GetName() != nullptr) ? std::string(gp->GetName()) : std::string();
++	}
++
++	ChatContext CPodBotManager::MakeContext(const CCSSBot* bot, const std::string& victimName)
++	{
++		ChatContext c;
++		c.lastVictim = victimName;
++		c.mapName = gamehelpers->GetCurrentMap();
++		c.timeLeft = "some time"; // TODO: read the real round timer
++		std::vector<std::string> mates;
++
++		for (int i = 1; i <= gpGlobals->maxClients; i++)
++		{
++			SourceMod::IGamePlayer* gp = playerhelpers->GetGamePlayer(i);
++
++			if (gp == nullptr || !gp->IsInGame() || i == bot->GetIndex())
++			{
++				continue;
++			}
++
++			CBaseExtPlayer other(gp->GetEdict());
++
++			if (other.IsAlive() && csslib::GetEntityCSSTeam(other.GetEntity()) == bot->GetMyCSSTeam())
++			{
++				mates.push_back(gp->GetName());
++			}
++		}
++
++		c.aliveMate = mates.empty() ? std::string("everyone") : mates[m_rng.Index(mates.size())];
++		c.topFragger = c.aliveMate; // TODO: use the real scoreboard leader
++		c.replyTo = victimName;
++		return c;
++	}
++
++	void CPodBotManager::Say(CBaseBot* bot, std::string msg)
++	{
++		// the message goes through a fake client command: keep ';' and '"' from breaking it
++		std::replace(msg.begin(), msg.end(), ';', ',');
++		std::replace(msg.begin(), msg.end(), '"', '\'');
++		bot->SendChatMessage(msg.c_str());
++	}
++
++	bool CPodBotManager::IsLive(const CBaseBot* bot) const
++	{
++		bool found = false;
++		auto check = [&found, bot](CBaseBot* b) { if (b == bot) { found = true; } };
++		extmanager->ForEachBot(check);
++		return found;
++	}
++
++	std::string CPodBotManager::RandomPlayerName(int excludeIndex)
++	{
++		std::vector<std::string> names;
++
++		for (int i = 1; i <= gpGlobals->maxClients; i++)
++		{
++			SourceMod::IGamePlayer* gp = playerhelpers->GetGamePlayer(i);
++
++			if (gp != nullptr && gp->IsInGame() && i != excludeIndex && !gp->IsSourceTV())
++			{
++				names.push_back(gp->GetName());
++			}
++		}
++
++		return names.empty() ? std::string("everyone") : names[m_rng.Index(names.size())];
++	}
++
++	// Sends delayed replies and lets dead bots chat ([DEADCHAT]).
++	void CPodBotManager::ProcessChat(float now)
++	{
++		for (auto it = m_pending.begin(); it != m_pending.end();)
++		{
++			if (it->time > now)
++			{
++				++it;
++				continue;
++			}
++
++			if (IsLive(it->bot))
++			{
++				Say(const_cast<CBaseBot*>(it->bot), it->msg);
++			}
++
++			it = m_pending.erase(it);
++		}
++
++		if (!m_settings.GetBool("pb_chat", true))
++		{
++			return;
++		}
++
++		std::vector<CCSSBot*> deadBots;
++		auto collect = [this, &deadBots, now](CBaseBot* b)
++		{
++			BotInfo* info = Find(b);
++
++			if (info == nullptr)
++			{
++				return;
++			}
++
++			if (b->IsAlive())
++			{
++				info->nextDeadChat = 0.0f;
++			}
++			else if (info->nextDeadChat == 0.0f)
++			{
++				info->nextDeadChat = now + m_rng.Float(10.0f, 30.0f); // first line a while after dying
++			}
++			else if (now >= info->nextDeadChat)
++			{
++				deadBots.push_back(static_cast<CCSSBot*>(b));
++			}
++		};
++		extmanager->ForEachBot(collect);
++
++		for (CCSSBot* bot : deadBots)
++		{
++			BotInfo* info = Find(bot);
++			info->nextDeadChat = now + m_rng.Float(15.0f, 40.0f);
++
++			if (m_rng.Int(0, 99) < m_settings.GetInt("pb_chat_dead_chance", 50) && now >= info->nextChatTime)
++			{
++				info->nextChatTime = now + m_settings.GetFloat("pb_chat_cooldown", 8.0f);
++				Say(bot, m_chat.PickDeadChat(m_rng, MakeContext(bot, RandomPlayerName(bot->GetIndex()))));
++			}
++		}
++	}
++
++	void CPodBotManager::OnPlayerSay(int userid, const char* text)
++	{
++		if (!m_loaded || text == nullptr || *text == '\0' || !m_settings.GetBool("pb_chat", true))
++		{
++			return;
++		}
++
++		SourceMod::IGamePlayer* speaker = playerhelpers->GetGamePlayer(playerhelpers->GetClientOfUserId(userid));
++
++		if (speaker == nullptr || !speaker->IsInGame() || speaker->IsFakeClient()) // bots do not answer each other
++		{
++			return;
++		}
++
++		if (m_rng.Int(0, 99) >= m_settings.GetInt("pb_chat_reply_chance", 25))
++		{
++			return;
++		}
++
++		const float now = gpGlobals->curtime;
++		std::vector<CCSSBot*> candidates;
++		auto collect = [this, &candidates, now](CBaseBot* b)
++		{
++			BotInfo* info = Find(b);
++
++			if (info != nullptr && now >= info->nextChatTime)
++			{
++				candidates.push_back(static_cast<CCSSBot*>(b));
++			}
++		};
++		extmanager->ForEachBot(collect);
++
++		if (candidates.empty())
++		{
++			return;
++		}
++
++		CCSSBot* bot = candidates[m_rng.Index(candidates.size())];
++		BotInfo* info = Find(bot);
++		const std::string reply = m_chat.Reply(text, m_rng, MakeContext(bot, speaker->GetName()));
++
++		if (reply.empty())
++		{
++			return;
++		}
++
++		info->nextChatTime = now + m_settings.GetFloat("pb_chat_cooldown", 8.0f);
++		const float typing = 1.0f + 0.06f * static_cast<float>(std::strlen(text)) + m_rng.Float(0.0f, 1.5f);
++		m_pending.push_back({ bot, now + typing, reply });
++	}
++
++	// pb_autokill: when every human is dead, bots are killed after pb_autokilldelay seconds so rounds do not drag on.
++	void CPodBotManager::UpdateAutoKill(float now)
++	{
++		if (!m_settings.GetBool("pb_autokill", false))
++		{
++			m_humansDeadSince = 0.0f;
++			return;
++		}
++
++		int playing = 0;
++		int alive = 0;
++
++		for (int i = 1; i <= gpGlobals->maxClients; i++)
++		{
++			SourceMod::IGamePlayer* gp = playerhelpers->GetGamePlayer(i);
++
++			if (gp == nullptr || !gp->IsInGame() || gp->IsFakeClient() || gp->IsSourceTV())
++			{
++				continue;
++			}
++
++			CBaseExtPlayer player(gp->GetEdict());
++			const auto team = csslib::GetEntityCSSTeam(player.GetEntity());
++
++			if (team != counterstrikesource::CSSTeam::TERRORIST && team != counterstrikesource::CSSTeam::COUNTERTERRORIST)
++			{
++				continue;
++			}
++
++			playing++;
++
++			if (player.IsAlive())
++			{
++				alive++;
++			}
++		}
++
++		if (playing == 0 || alive > 0)
++		{
++			m_humansDeadSince = 0.0f;
++			return;
++		}
++
++		if (m_humansDeadSince == 0.0f)
++		{
++			m_humansDeadSince = now;
++			return;
++		}
++
++		if (now - m_humansDeadSince < m_settings.GetFloat("pb_autokilldelay", 45.0f))
++		{
++			return;
++		}
++
++		auto killBot = [this](CBaseBot* bot)
++		{
++			if (Find(bot) != nullptr && bot->IsAlive())
++			{
++				bot->FakeClientCommand("kill");
++			}
++		};
++		extmanager->ForEachBot(killBot);
++		m_humansDeadSince = 0.0f;
++	}
++
++	// NavBot replaces every bot's difficulty profile when its own difficulty setting changes: put the PODBot skill back.
++	void CPodBotManager::ReapplyProfiles()
++	{
++		auto check = [this](CBaseBot* bot)
++		{
++			BotInfo* info = Find(bot);
++
++			if (info != nullptr && &*bot->GetDifficultyProfile() != info->profilePtr)
++			{
++				info->profilePtr = ApplyProfile(bot, info->skill, info->personality);
++			}
++		};
++		extmanager->ForEachBot(check);
++	}
++
++	// Moves bots to the team and class asked for in pb add / pb_bot_join_team / pb_skin (a few tries, then gives up).
++	void CPodBotManager::UpdateTeams(float now)
++	{
++		auto fix = [this, now](CBaseBot* b)
++		{
++			BotInfo* info = Find(b);
++
++			if (info == nullptr || info->desiredTeam == 0 || info->teamAttempts >= 4 || now < info->nextTeamAttempt)
++			{
++				return;
++			}
++
++			CCSSBot* bot = static_cast<CCSSBot*>(b);
++
++			if (static_cast<int>(bot->GetMyCSSTeam()) == info->desiredTeam)
++			{
++				info->desiredTeam = 0; // done
++				return;
++			}
++
++			char command[32];
++			ke::SafeSprintf(command, sizeof(command), "jointeam %d", info->desiredTeam);
++			bot->FakeClientCommand(command);
++			ke::SafeSprintf(command, sizeof(command), "joinclass %d", info->desiredClass);
++			bot->FakeClientCommand(command);
++			info->teamAttempts++;
++			info->nextTeamAttempt = now + 3.0f;
++		};
++		extmanager->ForEachBot(fix);
++	}
++
++	bool CPodBotManager::PickCampSpot(CCSSBot* bot, float x, float y, float maxDist, float out[3])
++	{
++		if (!m_loaded || !m_settings.GetBool("pb_use_hints", true) || Find(bot) == nullptr)
++		{
++			return false;
++		}
++
++		Hint hint;
++
++		if (!m_hints.Pick("camp", x, y, maxDist, static_cast<int>(bot->GetMyCSSTeam()), m_rng, hint))
++		{
++			return false;
++		}
++
++		out[0] = hint.pos[0];
++		out[1] = hint.pos[1];
++		out[2] = hint.pos[2];
++		return true;
++	}
++
++	bool CPodBotManager::ShouldShootThrough(CCSSBot* bot, const CKnownEntity* threat, const CBotWeapon* weapon)
++	{
++		if (!m_loaded || threat == nullptr || weapon == nullptr || threat->IsVisibleNow() || !m_settings.GetBool("pb_shootthruwalls", false))
++		{
++			return false;
++		}
++
++		BotInfo* info = Find(bot);
++
++		if (info == nullptr)
++		{
++			return false;
++		}
++
++		// only primary weapons that can penetrate (rifles, SMGs, snipers), not shotguns
++		if (weapon->GetWeaponInfo()->GetSlot() != counterstrikesource::CSS_WEAPON_SLOT_PRIMARY ||
++			weapon->GetClassname() == "weapon_m3" || weapon->GetClassname() == "weapon_xm1014")
++		{
++			return false;
++		}
++
++		const SkillBracket& bracket = m_skills.ForSkill(info->skill);
++		int chance = 0;
++
++		if (threat->WasEverFullyVisible() && threat->GetTimeSinceLastVisible() <= 3.0f)
++		{
++			chance = bracket.seenThru; // SEEN_SHOOTTHRU: seen this enemy a moment ago
++		}
++		else if (threat->GetTimeSinceLastHeard() <= 2.0f)
++		{
++			chance = bracket.hearThru; // HEAR_SHOOTTHRU: only heard the enemy
++		}
++
++		if (chance <= 0)
++		{
++			return false;
++		}
++
++		const float now = gpGlobals->curtime;
++
++		if (now >= info->nextWallbangRoll) // decide once every couple of seconds so the bot does not flicker
++		{
++			info->wallbang = m_rng.Int(0, 99) < chance;
++			info->nextWallbangRoll = now + 2.0f;
++		}
++
++		return info->wallbang;
++	}
++
++	void CPodBotManager::OnFollowMe(int clientIndex)
++	{
++		const int limit = m_settings.GetInt("pb_numfollowuser", 5);
++
++		if (!m_loaded || limit <= 0)
++		{
++			return;
++		}
++
++		SourceMod::IGamePlayer* gp = playerhelpers->GetGamePlayer(clientIndex);
++
++		if (gp == nullptr || !gp->IsInGame() || gp->IsFakeClient())
++		{
++			return;
++		}
++
++		CBaseExtPlayer human(gp->GetEdict());
++		const auto team = csslib::GetEntityCSSTeam(human.GetEntity());
++
++		if (!human.IsAlive() || (team != counterstrikesource::CSSTeam::TERRORIST && team != counterstrikesource::CSSTeam::COUNTERTERRORIST))
++		{
++			return;
++		}
++
++		const float now = gpGlobals->curtime;
++		int following = 0;
++		std::vector<CCSSBot*> candidates;
++		auto collect = [this, &following, &candidates, clientIndex, now, team](CBaseBot* b)
++		{
++			BotInfo* info = Find(b);
++
++			if (info == nullptr || !b->IsAlive() || static_cast<CCSSBot*>(b)->GetMyCSSTeam() != team)
++			{
++				return;
++			}
++
++			if (info->followClient == clientIndex && now < info->followUntil)
++			{
++				following++;
++			}
++			else
++			{
++				candidates.push_back(static_cast<CCSSBot*>(b));
++			}
++		};
++		extmanager->ForEachBot(collect);
++
++		while (following < limit && !candidates.empty())
++		{
++			const size_t pick = m_rng.Index(candidates.size());
++			CCSSBot* bot = candidates[pick];
++			candidates.erase(candidates.begin() + pick);
++			BotInfo* info = Find(bot);
++			info->followClient = clientIndex;
++			info->followUntil = now + GetFollowDuration();
++			bot->OnVoiceCommand(human.GetEntity(), kVoiceFollowMe);
++
++			if (m_rng.Int(0, 99) < 50 && m_settings.GetBool("pb_radio", true))
++			{
++				bot->FakeClientCommand("roger");
++			}
++
++			following++;
++		}
++	}
++
++	bool CPodBotManager::IsFreeForAll(CCSSBot* bot)
++	{
++		return m_loaded && m_settings.GetBool("pb_ffa", false) && Find(bot) != nullptr;
++	}
++
++	float CPodBotManager::CapCampTime(CCSSBot* bot, float seconds)
++	{
++		const float limit = m_settings.GetFloat("pb_maxcamptime", 0.0f);
++
++		if (!m_loaded || limit <= 0.0f || Find(bot) == nullptr)
++		{
++			return seconds;
++		}
++
++		return std::min(seconds, limit);
++	}
++
++	bool CPodBotManager::RadioAllowed(BotInfo& info, int chance)
++	{
++		if (!m_loaded || !m_settings.GetBool("pb_radio", true))
++		{
++			return false;
++		}
++
++		const float now = gpGlobals->curtime;
++
++		if (now < info.nextRadio || m_rng.Int(0, 99) >= chance)
++		{
++			return false;
++		}
++
++		info.nextRadio = now + m_settings.GetFloat("pb_radio_cooldown", 10.0f) + m_rng.Float(0.0f, 5.0f);
++		return true;
++	}
++
++	static bool IsEnemyPlayer(CCSSBot* bot, CBaseEntity* entity)
++	{
++		if (entity == nullptr || !UtilHelpers::IsPlayer(entity))
++		{
++			return false;
++		}
++
++		const auto team = csslib::GetEntityCSSTeam(entity);
++		return (team == counterstrikesource::CSSTeam::TERRORIST || team == counterstrikesource::CSSTeam::COUNTERTERRORIST) && team != bot->GetMyCSSTeam();
++	}
++
++	void CPodBotManager::OnInjured(CCSSBot* bot)
++	{
++		BotInfo* info = Find(bot);
++
++		if (info == nullptr || !bot->IsAlive() || bot->GetHealthPercentage() > 0.35f)
++		{
++			return;
++		}
++
++		if (RadioAllowed(*info, m_settings.GetInt("pb_radio_takingfire_chance", 30)))
++		{
++			bot->FakeClientCommand(m_rng.Int(0, 1) ? "takingfire" : "needbackup");
++		}
++	}
++
++	void CPodBotManager::OnSight(CCSSBot* bot, CBaseEntity* subject)
++	{
++		BotInfo* info = Find(bot);
++
++		if (info == nullptr || !bot->IsAlive() || !IsEnemyPlayer(bot, subject))
++		{
++			return;
++		}
++
++		if (RadioAllowed(*info, m_settings.GetInt("pb_radio_enemyspot_chance", 25)))
++		{
++			bot->FakeClientCommand("enemyspot");
++		}
++	}
++
++	static int ExperienceTeam(counterstrikesource::CSSTeam team)
++	{
++		return team == counterstrikesource::CSSTeam::TERRORIST ? 0 : (team == counterstrikesource::CSSTeam::COUNTERTERRORIST ? 1 : -1);
++	}
++
++	static std::string ExperienceFile(const std::string& map)
++	{
++		char path[PLATFORM_MAX_PATH]{};
++		smutils->BuildPath(SourceMod::PathType::Path_SM, path, sizeof(path), "data/navbot/podbot/%s.exp", map.c_str());
++		return path;
++	}
++
++	void CPodBotManager::LoadExperience()
++	{
++		m_experience.clear();
++		std::ifstream file(ExperienceFile(m_experienceMap));
++		unsigned int id = 0;
++		float t = 0.0f;
++		float ct = 0.0f;
++
++		while (file >> id >> t >> ct)
++		{
++			m_experience[id] = { std::max(0.0f, std::min(50.0f, t)), std::max(0.0f, std::min(50.0f, ct)) };
++		}
++	}
++
++	void CPodBotManager::SaveExperience() const
++	{
++		if (m_experienceMap.empty() || m_experience.empty())
++		{
++			return;
++		}
++
++		const std::string path = ExperienceFile(m_experienceMap);
++		std::error_code ec;
++		std::filesystem::create_directories(std::filesystem::path(path).parent_path(), ec);
++		std::ofstream file(path, std::ios::trunc);
++
++		for (const auto& entry : m_experience)
++		{
++			if (entry.second[0] > 0.05f || entry.second[1] > 0.05f)
++			{
++				file << entry.first << ' ' << entry.second[0] << ' ' << entry.second[1] << '\n';
++			}
++		}
++	}
++
++	void CPodBotManager::OnBotKilled(CCSSBot* bot)
++	{
++		if (!m_loaded || m_settings.GetInt("pb_dangerfactor", 2000) <= 0)
++		{
++			return;
++		}
++
++		CNavArea* area = bot->GetLastKnownNavArea();
++		const int team = ExperienceTeam(bot->GetMyCSSTeam());
++
++		if (area == nullptr || team < 0)
++		{
++			return;
++		}
++
++		float& deaths = m_experience[area->GetID()][team];
++		deaths = std::min(50.0f, deaths + 1.0f);
++	}
++
++	float CPodBotManager::GetExperienceCost(CCSSBot* bot, CNavArea* area) const
++	{
++		if (!m_loaded || area == nullptr)
++		{
++			return 0.0f;
++		}
++
++		const int factor = m_settings.GetInt("pb_dangerfactor", 2000);
++		const int team = ExperienceTeam(bot->GetMyCSSTeam());
++		auto it = m_experience.find(area->GetID());
++
++		if (factor <= 0 || team < 0 || it == m_experience.end() || it->second[team] <= 0.0f)
++		{
++			return 0.0f;
++		}
++
++		// logarithmic: 1 death adds about 100 units of path cost at the default factor of 2000
++		return static_cast<float>(factor) * 0.05f * std::log2(1.0f + it->second[team]);
++	}
++
++	void CPodBotManager::OnRoundEnd()
++	{
++		for (auto it = m_experience.begin(); it != m_experience.end();)
++		{
++			it->second[0] *= 0.97f;
++			it->second[1] *= 0.97f;
++			it = (it->second[0] < 0.05f && it->second[1] < 0.05f) ? m_experience.erase(it) : std::next(it);
++		}
++	}
++
++	void CPodBotManager::OnMapEnd()
++	{
++		SaveExperience();
++	}
++
++	void CPodBotManager::OnOtherKilled(CCSSBot* bot, CBaseEntity* victim, CBaseEntity* attacker)
++	{
++		BotInfo* info = Find(bot);
++
++		if (info == nullptr || attacker != bot->GetEntity() || victim == bot->GetEntity() || !UtilHelpers::IsPlayer(victim))
++		{
++			return;
++		}
++
++		if (IsEnemyPlayer(bot, victim) && RadioAllowed(*info, m_settings.GetInt("pb_radio_enemydown_chance", 20)))
++		{
++			bot->FakeClientCommand("enemydown");
++		}
++
++		if (!ChatAllowed(bot, *info, "pb_chat_killed_chance", 30))
++		{
++			return;
++		}
++
++		Say(bot, m_chat.PickKilled(m_rng, MakeContext(bot, PlayerName(victim))));
++	}
++
++	void CPodBotManager::OnBombPlanted(CCSSBot* bot)
++	{
++		BotInfo* info = Find(bot);
++
++		if (info == nullptr || bot->GetMyCSSTeam() != counterstrikesource::CSSTeam::COUNTERTERRORIST)
++		{
++			return;
++		}
++
++		if (!ChatAllowed(bot, *info, "pb_chat_bomb_chance", 40))
++		{
++			return;
++		}
++
++		Say(bot, m_chat.PickBombPlant(m_rng, MakeContext(bot, std::string())));
++	}
++}
+diff --git a/extension/podbot/podbot_manager.h b/extension/podbot/podbot_manager.h
+new file mode 100644
+index 0000000..3b9521d
+--- /dev/null
++++ b/extension/podbot/podbot_manager.h
+@@ -0,0 +1,137 @@
++#ifndef NAVBOT_PODBOT_MANAGER_H_
++#define NAVBOT_PODBOT_MANAGER_H_
++
++#include <array>
++#include <string>
++#include <vector>
++#include <unordered_map>
++#include <unordered_set>
++
++#include "podbot_data.h"
++
++class CBaseBot;
++class CCSSBot;
++class CNavArea;
++class CKnownEntity;
++class CBotWeapon;
++class CBaseEntity;
++
++namespace podbot
++{
++	// Voice command id the manager sends to bots that must follow a player (see CCSSBotMainTask::OnVoiceCommand)
++	constexpr int kVoiceFollowMe = 0x50420001;
++
++	// PODBot-style layer for the Counter-Strike: Source bot (skills, personalities, names, chat).
++	// Buy decisions for one PODBot-managed bot (weapon lists are best first).
++	struct BuyPlan
++	{
++		std::vector<std::string> primaries;
++		std::vector<std::string> secondaries;
++		bool jasonMode = false;   // pb_jasonmode: buy nothing, knife only
++		bool noArmor = false, noFlash = false, noHE = false, noSmoke = false, noDefuser = false;
++	};
++
++	class CPodBotManager
++	{
++	public:
++		// (Re)loads every file from addons/sourcemod/configs/navbot/podbot/. Returns false on any error.
++		bool Load();
++		bool IsLoaded() const { return m_loaded; }
++		const Settings& GetSettings() const { return m_settings; }
++
++		// skill < 0 picks a random skill in [pb_minbotskill, pb_maxbotskill]; personality 0 picks randomly.
++		// team: 1 = T, 2 = CT, 5 or 0 = automatic (or forced by pb_bot_join_team). model: class 1-4, 0 = random (or forced by pb_skin).
++		void AddBot(int skill = -1, int personality = 0, const std::string& name = std::string(), int team = 0, int model = 0);
++		// Adds bots until pb_maxbots (or maxClients - 1) is reached.
++		void FillServer(int skill = -1, int personality = 0, int team = 0, int model = 0);
++		// Runs the "pb add ..." lines found in podbot.cfg.
++		void RunStartupCommands();
++
++		// Fills the buy plan for a bot added through PODBot. Returns false for any other bot.
++		bool GetBuyPlan(CCSSBot* bot, BuyPlan& plan);
++
++		// Called by the CS:S mod: reloads the config files and restarts the startup timer.
++		void OnMapStart();
++		// Called by the CS:S mod at intervals: runs the "pb add" lines after pb_mapstartbotdelay and keeps the
++		// bot count between pb_minbots and pb_maxbots (one bot leaves for each joining human, and returns when they leave).
++		void Update();
++
++		// A human said something: a bot may answer after a short typing delay ([REPLIES] and [UNKNOWN] in botchat.txt).
++		void OnPlayerSay(int userid, const char* text);
++
++		// Experience memory (pb_dangerfactor): bots remember where their team got killed and route around it.
++		// It is saved per map in data/navbot/podbot/<map>.exp. Delete the file after regenerating a nav mesh.
++		void OnBotKilled(CCSSBot* bot);
++		float GetExperienceCost(CCSSBot* bot, CNavArea* area) const;
++		void OnRoundEnd();
++		void OnMapEnd();
++
++		// pb_maxcamptime: longest time (seconds) a PODBot-managed bot stays camping in one place.
++		float CapCampTime(CCSSBot* bot, float seconds);
++
++		// Map hints converted from PODBot waypoints (camp spots): picks one near (x, y) for this bot's team.
++		// Returns false when there is none, hints are off (pb_use_hints 0) or the bot is not managed by PODBot.
++		bool PickCampSpot(CCSSBot* bot, float x, float y, float maxDist, float out[3]);
++
++		// pb_ffa: bots treat everybody as an enemy (needs mp_friendlyfire 1 on the server to do any damage to teammates).
++		bool IsFreeForAll(CCSSBot* bot);
++
++		// pb_shootthruwalls: true when a bot may fire at an enemy it cannot see (last seen or heard behind an obstacle).
++		// The chance comes from SEEN_SHOOTTHRU / HEAR_SHOOTTHRU in botskill.cfg for the bot's skill.
++		bool ShouldShootThrough(CCSSBot* bot, const CKnownEntity* threat, const CBotWeapon* weapon);
++
++		// A human used the "Follow Me" radio command: up to pb_numfollowuser bots of their team follow them.
++		void OnFollowMe(int clientIndex);
++		float GetFollowDuration() const { return m_settings.GetFloat("pb_followtime", 60.0f); }
++
++		// Chat events
++		void OnOtherKilled(CCSSBot* bot, CBaseEntity* victim, CBaseEntity* attacker);
++		void OnBombPlanted(CCSSBot* bot);
++
++		// Radio events (pb_radio): enemy down, taking fire / need backup, enemy spotted
++		void OnInjured(CCSSBot* bot);
++		void OnSight(CCSSBot* bot, CBaseEntity* subject);
++
++	private:
++		struct BotInfo { int followClient = 0; float followUntil = 0.0f; float nextWallbangRoll = 0.0f; bool wallbang = false; const void* profilePtr = nullptr; int desiredTeam = 0; int desiredClass = 0; int teamAttempts = 0; float nextTeamAttempt = 0.0f; int skill = 100; Personality personality = Personality::Normal; float nextChatTime = 0.0f; float nextDeadChat = 0.0f; float nextRadio = 0.0f; };
++		struct PendingSay { const CBaseBot* bot; float time; std::string msg; };
++
++		const void* ApplyProfile(CBaseBot* bot, int skill, Personality p); // returns the profile that was set
++		void ReapplyProfiles();
++		BotInfo* Find(const CBaseBot* bot);
++		bool ChatAllowed(const CBaseBot* bot, BotInfo& info, const char* chanceKey, int defaultChance);
++		ChatContext MakeContext(const CCSSBot* bot, const std::string& victimName);
++		void Say(CBaseBot* bot, std::string msg);
++		bool RadioAllowed(BotInfo& info, int chance);
++		void UpdateAutoKill(float now);
++		void UpdateTeams(float now);
++		float m_humansDeadSince = 0.0f;
++
++		bool m_loaded = false;
++		Settings m_settings;
++		SkillTable m_skills;
++		NameList m_names;
++		WeaponTables m_weapons;
++		ChatDB m_chat;
++		Rng m_rng;
++		std::unordered_map<const CBaseBot*, BotInfo> m_info;
++		float m_mapStartTime = 0.0f;
++		float m_nextUpdate = 0.0f;
++		bool m_startupDone = false;
++		int m_lastHumans = -1;
++		int m_kicked = 0; // bots removed to make room for humans
++		std::vector<PendingSay> m_pending;
++		HintTable m_hints;
++		std::unordered_map<unsigned int, std::array<float, 2>> m_experience; // nav area id -> deaths for T, CT
++		std::string m_experienceMap;
++		void LoadExperience();
++		void SaveExperience() const;
++		bool IsLive(const CBaseBot* bot) const;
++		std::string RandomPlayerName(int excludeIndex);
++		void ProcessChat(float now);
++	};
++
++	CPodBotManager& PodBot();
++}
++
++#endif // !NAVBOT_PODBOT_MANAGER_H_

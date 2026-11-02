@@ -22,6 +22,8 @@ public:
 
 protected:
 	bool CanFireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon) const override;
+	// PODBot shoot-through-walls (pb_shootthruwalls)
+	void FireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon, const bool bypassLOS = false) override;
 
 private:
 	CountdownTimer m_flashbangedTimer;

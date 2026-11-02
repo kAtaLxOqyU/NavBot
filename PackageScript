@@ -22,6 +22,8 @@ folder_list = [
   'addons/sourcemod/configs/navbot/insmic',
   'addons/sourcemod/configs/navbot/hl1mp',
   'addons/sourcemod/configs/navbot/cstrike',
+  'addons/sourcemod/configs/navbot/podbot',
+  'addons/sourcemod/configs/navbot/podbot/hints',
   'addons/sourcemod/data/',
   'addons/sourcemod/data/navbot',
   'addons/sourcemod/data/navbot/cstrike',
@@ -145,3 +147,19 @@ for cxx_task in Extension.extensions:
     builder.AddCopy(cxx_task.binary, folder_map['addons/sourcemod/extensions/x64'])
   else:
     builder.AddCopy(cxx_task.binary, folder_map['addons/sourcemod/extensions'])
+
+CopyFiles('configs/podbot', 'addons/sourcemod/configs/navbot/podbot',
+  [
+    'podbot.cfg',
+    'botskill.cfg',
+    'botnames.txt',
+    'botweapons.cfg',
+    'botchat.txt'
+  ]
+)
+
+CopyFiles('configs/podbot/hints', 'addons/sourcemod/configs/navbot/podbot/hints',
+  [
+    'de_dust2.hint'
+  ]
+)

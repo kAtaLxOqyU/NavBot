@@ -232,7 +232,15 @@ void IPlayerController::RunLook()
 
 	constexpr auto tolerance = IPlayerController::AIM_ON_TARGET_DOT_TOLERANCE;
 	auto eyepos = me->GetEyeOrigin();
-	auto to = m_looktarget - eyepos;
+	Vector aimTarget = m_looktarget;
+
+	if (m_aimOverride)
+	{
+		aimTarget = m_aimOverride->AdjustTarget(me, m_looktarget, m_lookentity.IsValid());
+	}
+
+	auto to = aimTarget - eyepos;
+	const float aimDistance = to.Length();
 	to.NormalizeInPlace();
 	QAngle desiredAngles;
 	VectorAngles(to, desiredAngles);
@@ -263,8 +271,11 @@ void IPlayerController::RunLook()
 		m_isOnTarget = false; // aim is off target
 	}
 
-	finalAngles.x = ApproachAngle(desiredAngles.x, currentAngles.x, m_aimSpeed * deltaTime);
-	finalAngles.y = ApproachAngle(desiredAngles.y, currentAngles.y, m_aimSpeed * deltaTime);
+	if (!m_aimOverride || !m_aimOverride->Turn(me, currentAngles, desiredAngles, m_lookentity.IsValid(), aimDistance, deltaTime, finalAngles))
+	{
+		finalAngles.x = ApproachAngle(desiredAngles.x, currentAngles.x, m_aimSpeed * deltaTime);
+		finalAngles.y = ApproachAngle(desiredAngles.y, currentAngles.y, m_aimSpeed * deltaTime);
+	}
 
 	finalAngles.x = AngleNormalize(finalAngles.x);
 	// Matches the default limits for PITCH angles. See https://github.com/ValveSoftware/source-sdk-2013/blob/b8cfb12c0e083a2ef5b2f9f9b50f3902fa034474/src/game/client/in_main.cpp#L68-L69

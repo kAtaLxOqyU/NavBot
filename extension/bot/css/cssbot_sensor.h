@@ -10,6 +10,9 @@ class CCSSBotSensor : public CSimplePvPSensor<CCSSBot>
 public:
 	CCSSBotSensor(CCSSBot* bot);
 
+	// PODBot free-for-all mode (pb_ffa): everybody except me is an enemy
+	bool IsFriendly(CBaseEntity* entity) const override;
+	bool IsEnemy(CBaseEntity* entity) const override;
 
 private:
 
