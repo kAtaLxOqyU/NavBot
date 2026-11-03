@@ -22,22 +22,22 @@ jobs:
 
         include:
           - meta_branch: "1.12-dev"
-            sdks_to_fetch: 'tf2 dods css bms sdk2013 orangebox hl2dm episode1 l4d l4d2 csgo swarm'
+            sdks_to_fetch: 'css'
           
           - os: windows
             os_version: windows-latest
             ambuild_target: 'x86,x86_64'
             libsym_ext: 'dll'
             dbgsym_ext: 'pdb'
-            build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm,episode1,l4d,l4d2,csgo,swarm'
-            os_ambuild_params: '--breakpad-upload'
+            build_sdks: 'css'
+            os_ambuild_params: ''
 
           - os: linux
             os_version: ubuntu-latest
             ambuild_target: 'x86,x86_64'
             libsym_ext: 'so'
             dbgsym_ext: 'dbg'
-            build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm,episode1,l4d,l4d2,csgo'
+            build_sdks: 'css'
             os_ambuild_params: ''
             container_image: ghcr.io/alliedmodders/build-containers/debian11-clang22:latest
 
