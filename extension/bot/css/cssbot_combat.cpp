@@ -23,6 +23,8 @@ bool CCSSBotCombat::CanFireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity
 
 void CCSSBotCombat::FireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon, const bool bypassLOS)
 {
-	const bool throughWalls = podbot::PodBot().ShouldShootThrough(static_cast<CCSSBot*>(const_cast<CBaseBot*>(bot)), threat, activeWeapon);
+	CCSSBot* cssbot = static_cast<CCSSBot*>(const_cast<CBaseBot*>(bot));
+	podbot::PodBot().OnFireAtEnemy(cssbot, threat, activeWeapon);
+	const bool throughWalls = podbot::PodBot().ShouldShootThrough(cssbot, threat, activeWeapon);
 	ICombat::FireWeaponAtEnemy(bot, threat, activeWeapon, bypassLOS || throughWalls);
 }

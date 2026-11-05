@@ -90,7 +90,27 @@ std::vector<std::string> ExtractQuoted(const std::string& line)
 
 std::string Truncate(std::string s) { if (s.size() > kMaxChatLen) s.resize(kMaxChatLen); return s; }
 
+bool AllDigits(const std::string& s) { return !s.empty() && std::all_of(s.begin(), s.end(), [](char c) { return c >= '0' && c <= '9'; }); }
+
 } // namespace
+
+std::string CleanPlayerName(const std::string& name)
+{
+	std::string s = Trim(name);
+	if (s.size() > 2 && s[0] == '(') {                       // "(1)Name": Source adds this when two players share a name
+		size_t close = s.find(')');
+		if (close != std::string::npos && AllDigits(s.substr(1, close - 1))) s = Trim(s.substr(close + 1));
+	}
+	bool pod = false;
+	for (const char* prefix : { "[POD]", "[P*D]", "[P0D]" }) {
+		if (s.rfind(prefix, 0) == 0) { s = Trim(s.substr(std::string(prefix).size())); pod = true; break; }
+	}
+	if (pod && s.size() > 3 && s.back() == ')') {            // "Name (100)": the skill shown by pb_detailnames
+		size_t open = s.rfind(" (");
+		if (open != std::string::npos && AllDigits(s.substr(open + 2, s.size() - open - 3))) s = Trim(s.substr(0, open));
+	}
+	return s.empty() ? Trim(name) : s;
+}
 
 // ------------------------------------------------------------------ Settings
 bool Settings::Load(const std::string& path, std::string* err)

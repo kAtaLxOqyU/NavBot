@@ -1,0 +1,396 @@
+diff --git a/configs/podbot/podbot.cfg b/configs/podbot/podbot.cfg
+index ae16ad8..1410597 100644
+--- a/configs/podbot/podbot.cfg
++++ b/configs/podbot/podbot.cfg
+@@ -40,6 +40,8 @@ pb_maxcamptime 30
+ # CS:S edition: camp at spots taken from PODBot's waypoints (configs/navbot/podbot/hints/<map>.hint)
+ pb_use_hints 1
+ pb_jasonmode 0
++# CS:S edition: chance in percent that a bot crouches while shooting at an enemy 700+ units away
++pb_crouch_chance 35
+ 
+ # 0 none, 1 [POD] prefix + (skill), 2 prefix only, 3 (skill) only
+ pb_detailnames 1
+@@ -71,8 +73,15 @@ pb_aim_deviation_x 2.0
+ pb_aim_deviation_y 1.0
+ pb_aim_influence_x_on_y 0.25
+ pb_aim_influence_y_on_x 0.17
+-# CS:S edition: multiplies both damper values (raise it to reduce overshoot after a flick)
+-pb_aim_damping_scale 1.0
++# CS:S edition: multiplies both damper values. 1.0 is the literal PODBot value and overshoots a lot
++# (the view swings far past the target); 3.0 gives a calm, controller-like turn. Raise it for even smoother aim.
++pb_aim_damping_scale 3.0
++# CS:S edition: when a bot is not aiming at an enemy (walking, scanning) the view stays near level.
++# idle_pitch_scale is the part of the up/down angle that is used (1.0 = all of it), idle_pitch_limit the most
++# it may tilt (degrees). pitch_speed_ratio makes up/down turns slower than left/right turns.
++pb_aim_idle_pitch_scale 0.4
++pb_aim_idle_pitch_limit 15
++pb_aim_pitch_speed_ratio 0.6
+ pb_aim_offset_delay 1.2
+ pb_aim_notarget_slowdown_ratio 0.5
+ pb_aim_target_anticipation_ratio 2.2
+diff --git a/extension/bot/css/cssbot_combat.cpp b/extension/bot/css/cssbot_combat.cpp
+index 626f6df..d1bee68 100644
+--- a/extension/bot/css/cssbot_combat.cpp
++++ b/extension/bot/css/cssbot_combat.cpp
+@@ -23,6 +23,8 @@ bool CCSSBotCombat::CanFireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity
+ 
+ void CCSSBotCombat::FireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon, const bool bypassLOS)
+ {
+-	const bool throughWalls = podbot::PodBot().ShouldShootThrough(static_cast<CCSSBot*>(const_cast<CBaseBot*>(bot)), threat, activeWeapon);
++	CCSSBot* cssbot = static_cast<CCSSBot*>(const_cast<CBaseBot*>(bot));
++	podbot::PodBot().OnFireAtEnemy(cssbot, threat, activeWeapon);
++	const bool throughWalls = podbot::PodBot().ShouldShootThrough(cssbot, threat, activeWeapon);
+ 	ICombat::FireWeaponAtEnemy(bot, threat, activeWeapon, bypassLOS || throughWalls);
+ }
+diff --git a/extension/podbot/podbot_aim.cpp b/extension/podbot/podbot_aim.cpp
+index b17d932..90f7248 100644
+--- a/extension/podbot/podbot_aim.cpp
++++ b/extension/podbot/podbot_aim.cpp
+@@ -20,6 +20,9 @@ AimParams AimParams::FromSettings(const Settings& s)
+ 	p.dampX = s.GetFloat("pb_aim_damper_coefficient_x", p.dampX);
+ 	p.dampY = s.GetFloat("pb_aim_damper_coefficient_y", p.dampY);
+ 	p.dampScale = s.GetFloat("pb_aim_damping_scale", p.dampScale);
++	p.idlePitchScale = s.GetFloat("pb_aim_idle_pitch_scale", p.idlePitchScale);
++	p.idlePitchLimit = s.GetFloat("pb_aim_idle_pitch_limit", p.idlePitchLimit);
++	p.pitchSpeedRatio = s.GetFloat("pb_aim_pitch_speed_ratio", p.pitchSpeedRatio);
+ 	p.devX = s.GetFloat("pb_aim_deviation_x", p.devX);
+ 	p.devY = s.GetFloat("pb_aim_deviation_y", p.devY);
+ 	p.infXonY = s.GetFloat("pb_aim_influence_x_on_y", p.infXonY);
+@@ -77,9 +80,13 @@ Angles SpringAim::Update(const Angles& desired, bool hasTarget, float maxTurn, f
+ 		m_timer = m_rng.Float(0.2f * m_p.offsetDelay, m_p.offsetDelay);
+ 	}
+ 	Angles target = desired;
+-	if (!hasTarget && distance > 1.0f) {      // the error margin only applies when aiming at nothing
+-		target.pitch += std::atan2(m_devP, distance) * kRadToDeg;
+-		target.yaw += std::atan2(m_devY, distance) * kRadToDeg;
++	if (!hasTarget) {
++		// Aiming at nothing in particular (walking, scanning): keep the view near level instead of
++		// staring at the floor or the sky, and add the small idle error margin.
++		target.pitch = Clamp(target.pitch * m_p.idlePitchScale, -m_p.idlePitchLimit, m_p.idlePitchLimit);
++		const float dist = std::max(distance, 100.0f);   // a very close aim point must not turn into a big angle
++		target.pitch += std::atan2(m_devP, dist) * kRadToDeg;
++		target.yaw += std::atan2(m_devY, dist) * kRadToDeg;
+ 	}
+ 
+ 	const float scale = hasTarget ? 1.0f : m_p.noTargetSlowdown;
+@@ -89,15 +96,21 @@ Angles SpringAim::Update(const Angles& desired, bool hasTarget, float maxTurn, f
+ 	const float h = dt / static_cast<float>(steps);
+ 
+ 	for (int i = 0; i < steps; ++i) {
+-		float eP = target.pitch - m_cur.pitch;
+-		float eY = WrapDeg(target.yaw - m_cur.yaw);
++		// Moving the crosshair on one axis disturbs the other one a little (pb_aim_influence_*):
++		// a small offset proportional to how fast the other axis is turning.
++		const float disturbP = m_p.infYonX * m_velY * m_p.disturbSeconds;
++		const float disturbY = m_p.infXonY * m_velP * m_p.disturbSeconds;
++		float eP = target.pitch + disturbP - m_cur.pitch;
++		float eY = WrapDeg(target.yaw + disturbY - m_cur.yaw);
+ 		float aP = wP * wP * eP - 2.0f * dX * wP * m_velP;
+ 		float aY = wY * wY * eY - 2.0f * dY * wY * m_velY;
+-		float aP2 = aP + m_p.infYonX * aY;     // yaw motion disturbs pitch
+-		float aY2 = aY + m_p.infXonY * aP;     // pitch motion disturbs yaw
+-		m_velP += aP2 * h;
+-		m_velY += aY2 * h;
+-		if (maxTurn > 0.0f) { m_velP = Clamp(m_velP, -maxTurn, maxTurn); m_velY = Clamp(m_velY, -maxTurn, maxTurn); }
++		m_velP += aP * h;
++		m_velY += aY * h;
++		if (maxTurn > 0.0f) {
++			const float maxP = maxTurn * m_p.pitchSpeedRatio;
++			m_velP = Clamp(m_velP, -maxP, maxP);
++			m_velY = Clamp(m_velY, -maxTurn, maxTurn);
++		}
+ 		m_cur.pitch += m_velP * h;
+ 		m_cur.yaw += m_velY * h;
+ 	}
+diff --git a/extension/podbot/podbot_aim.h b/extension/podbot/podbot_aim.h
+index 1ce9ddf..6a54a86 100644
+--- a/extension/podbot/podbot_aim.h
++++ b/extension/podbot/podbot_aim.h
+@@ -16,7 +16,11 @@ struct AimParams {
+ 	int   type = 4;                    // pb_aim_type: 1 snap, 2 constant velocity, 3/4 spring
+ 	float stiffX = 13.0f, stiffY = 13.0f;
+ 	float dampX = 0.22f,  dampY = 0.22f;
+-	float dampScale = 1.0f;                    // pb_aim_damping_scale (CS:S edition): multiplies both damper values
++	float dampScale = 3.0f;                    // pb_aim_damping_scale (CS:S edition): multiplies both damper values
++	float idlePitchScale = 0.4f;               // pb_aim_idle_pitch_scale: when aiming at nothing, how much of the up/down angle is used
++	float idlePitchLimit = 15.0f;              // pb_aim_idle_pitch_limit: ...and the most the view may tilt up or down then (degrees)
++	float pitchSpeedRatio = 0.6f;              // pb_aim_pitch_speed_ratio: up/down turns are slower than left/right turns
++	float disturbSeconds = 0.01f;              // cross-axis disturbance = influence * other axis speed * this
+ 	float devX = 2.0f,    devY = 1.0f;          // idle error margin (game units)
+ 	float infXonY = 0.25f, infYonX = 0.17f;     // cross-axis disturbance
+ 	float offsetDelay = 1.2f;                   // seconds between new idle offsets
+diff --git a/extension/podbot/podbot_data.cpp b/extension/podbot/podbot_data.cpp
+index 894e3d1..3f40acc 100644
+--- a/extension/podbot/podbot_data.cpp
++++ b/extension/podbot/podbot_data.cpp
+@@ -90,8 +90,28 @@ std::vector<std::string> ExtractQuoted(const std::string& line)
+ 
+ std::string Truncate(std::string s) { if (s.size() > kMaxChatLen) s.resize(kMaxChatLen); return s; }
+ 
++bool AllDigits(const std::string& s) { return !s.empty() && std::all_of(s.begin(), s.end(), [](char c) { return c >= '0' && c <= '9'; }); }
++
+ } // namespace
+ 
++std::string CleanPlayerName(const std::string& name)
++{
++	std::string s = Trim(name);
++	if (s.size() > 2 && s[0] == '(') {                       // "(1)Name": Source adds this when two players share a name
++		size_t close = s.find(')');
++		if (close != std::string::npos && AllDigits(s.substr(1, close - 1))) s = Trim(s.substr(close + 1));
++	}
++	bool pod = false;
++	for (const char* prefix : { "[POD]", "[P*D]", "[P0D]" }) {
++		if (s.rfind(prefix, 0) == 0) { s = Trim(s.substr(std::string(prefix).size())); pod = true; break; }
++	}
++	if (pod && s.size() > 3 && s.back() == ')') {            // "Name (100)": the skill shown by pb_detailnames
++		size_t open = s.rfind(" (");
++		if (open != std::string::npos && AllDigits(s.substr(open + 2, s.size() - open - 3))) s = Trim(s.substr(0, open));
++	}
++	return s.empty() ? Trim(name) : s;
++}
++
+ // ------------------------------------------------------------------ Settings
+ bool Settings::Load(const std::string& path, std::string* err)
+ {
+diff --git a/extension/podbot/podbot_data.h b/extension/podbot/podbot_data.h
+index fbad89a..8c25353 100644
+--- a/extension/podbot/podbot_data.h
++++ b/extension/podbot/podbot_data.h
+@@ -29,6 +29,10 @@ private:
+ 	std::mt19937 m_;
+ };
+ 
++// Player name for chat: drops Source's "(1)" duplicate prefix and, for PODBot names, the [POD]/[P*D]/[P0D] prefix and
++// the "(skill)" suffix. "(1)[P*D] Jack_Nicholson (100)" becomes "Jack_Nicholson".
++std::string CleanPlayerName(const std::string& name);
++
+ // ---- podbot.cfg (pb_* settings and "pb add"-style commands) ----
+ struct ConsoleCommand { std::string verb; std::vector<std::string> args; };
+ 
+diff --git a/extension/podbot/podbot_manager.cpp b/extension/podbot/podbot_manager.cpp
+index b13a99d..a3844ad 100644
+--- a/extension/podbot/podbot_manager.cpp
++++ b/extension/podbot/podbot_manager.cpp
+@@ -96,6 +96,12 @@ namespace podbot
+ 		}
+ 
+ 		m_loaded = true;
++
++		for (auto& entry : m_info)
++		{
++			entry.second.profilePtr = nullptr; // ReapplyProfiles() then rebuilds each bot's skill and aim with the new settings
++		}
++
+ 		rootconsole->ConsolePrint("[PODBot] Loaded: %i names, %i chat replies.", static_cast<int>(m_names.Size()), static_cast<int>(m_chat.Replies().size()));
+ 		return true;
+ 	}
+@@ -141,6 +147,46 @@ namespace podbot
+ 		return profile.get();
+ 	}
+ 
++	void CPodBotManager::CountPlayers(int& humans, int& bots) const
++	{
++		humans = 0;
++		bots = 0;
++
++		for (int i = 1; i <= gpGlobals->maxClients; i++)
++		{
++			SourceMod::IGamePlayer* gp = playerhelpers->GetGamePlayer(i);
++
++			if (gp == nullptr || !gp->IsInGame() || gp->IsSourceTV())
++			{
++				continue;
++			}
++
++			if (gp->IsFakeClient())
++			{
++				bots++;
++			}
++			else
++			{
++				humans++;
++			}
++		}
++	}
++
++	bool CPodBotManager::NameInUse(const std::string& name) const
++	{
++		for (int i = 1; i <= gpGlobals->maxClients; i++)
++		{
++			SourceMod::IGamePlayer* gp = playerhelpers->GetGamePlayer(i);
++
++			if (gp != nullptr && gp->IsInGame() && gp->GetName() != nullptr && CleanPlayerName(gp->GetName()) == name)
++			{
++				return true;
++			}
++		}
++
++		return false;
++	}
++
+ 	void CPodBotManager::AddBot(int skill, int personality, const std::string& name, int team, int model)
+ 	{
+ 		if (!m_loaded && !Load())
+@@ -148,6 +194,17 @@ namespace podbot
+ 			return;
+ 		}
+ 
++		// never fill the last slot: a human must always be able to join (the old behaviour added bots and then kicked them)
++		int humans = 0;
++		int bots = 0;
++		CountPlayers(humans, bots);
++
++		if (humans + bots >= gpGlobals->maxClients - 1)
++		{
++			rootconsole->ConsolePrint("[PODBot] Not adding a bot: the server has no free slot left (it keeps one for a player).");
++			return;
++		}
++
+ 		if (skill < 0)
+ 		{
+ 			int lo = std::max(0, std::min(100, m_settings.GetInt("pb_minbotskill", 95)));
+@@ -157,7 +214,21 @@ namespace podbot
+ 
+ 		skill = std::max(0, std::min(100, skill));
+ 		Personality p = (personality >= 1 && personality <= 3) ? static_cast<Personality>(personality) : static_cast<Personality>(m_rng.Int(1, 3));
+-		std::string base = name.empty() ? m_names.Pick(m_rng) : name;
++		std::string base = name;
++
++		if (base.empty())
++		{
++			// avoid two bots with the same name (Source would show "(1)" in front of the second one)
++			for (int attempt = 0; attempt < 40; attempt++)
++			{
++				base = m_names.Pick(m_rng);
++
++				if (!NameInUse(base))
++				{
++					break;
++				}
++			}
++		}
+ 		std::string full = NameList::Format(base, p, skill, m_settings.GetInt("pb_detailnames", 1));
+ 
+ 		edict_t* edict = nullptr;
+@@ -207,7 +278,7 @@ namespace podbot
+ 	{
+ 		int maxbots = m_settings.GetInt("pb_maxbots", 16);
+ 
+-		if (maxbots <= 0)
++		if (maxbots <= 0 || maxbots > gpGlobals->maxClients - 1)
+ 		{
+ 			maxbots = gpGlobals->maxClients - 1;
+ 		}
+@@ -357,7 +428,7 @@ namespace podbot
+ 
+ 		m_lastHumans = humans;
+ 
+-		if (humans + bots > limit && bots > minbots) // server became too full
++		if (humans + bots > gpGlobals->maxClients - 1 && bots > minbots) // no free slot left for a player
+ 		{
+ 			extmanager->RemoveRandomBot("Server is full");
+ 		}
+@@ -490,7 +561,7 @@ namespace podbot
+ 	ChatContext CPodBotManager::MakeContext(const CCSSBot* bot, const std::string& victimName)
+ 	{
+ 		ChatContext c;
+-		c.lastVictim = victimName;
++		c.lastVictim = CleanPlayerName(victimName);
+ 		c.mapName = gamehelpers->GetCurrentMap();
+ 		c.timeLeft = "some time"; // TODO: read the real round timer
+ 		std::vector<std::string> mates;
+@@ -508,13 +579,13 @@ namespace podbot
+ 
+ 			if (other.IsAlive() && csslib::GetEntityCSSTeam(other.GetEntity()) == bot->GetMyCSSTeam())
+ 			{
+-				mates.push_back(gp->GetName());
++				mates.push_back(CleanPlayerName(gp->GetName()));
+ 			}
+ 		}
+ 
+ 		c.aliveMate = mates.empty() ? std::string("everyone") : mates[m_rng.Index(mates.size())];
+ 		c.topFragger = c.aliveMate; // TODO: use the real scoreboard leader
+-		c.replyTo = victimName;
++		c.replyTo = CleanPlayerName(victimName);
+ 		return c;
+ 	}
+ 
+@@ -548,7 +619,7 @@ namespace podbot
+ 			}
+ 		}
+ 
+-		return names.empty() ? std::string("everyone") : names[m_rng.Index(names.size())];
++		return names.empty() ? std::string("everyone") : CleanPlayerName(names[m_rng.Index(names.size())]);
+ 	}
+ 
+ 	// Sends delayed replies and lets dead bots chat ([DEADCHAT]).
+@@ -795,6 +866,36 @@ namespace podbot
+ 		return true;
+ 	}
+ 
++	void CPodBotManager::OnFireAtEnemy(CCSSBot* bot, const CKnownEntity* threat, const CBotWeapon* weapon)
++	{
++		const int chance = m_settings.GetInt("pb_crouch_chance", 35);
++
++		if (!m_loaded || chance <= 0 || threat == nullptr || weapon == nullptr || !threat->IsVisibleNow())
++		{
++			return;
++		}
++
++		BotInfo* info = Find(bot);
++
++		if (info == nullptr || weapon->GetWeaponInfo()->GetSlot() != counterstrikesource::CSS_WEAPON_SLOT_PRIMARY)
++		{
++			return;
++		}
++
++		const float now = gpGlobals->curtime;
++
++		if (now >= info->nextCrouchRoll) // decide again every couple of seconds
++		{
++			info->crouching = bot->GetRangeTo(threat->GetEntity()) >= 700.0f && m_rng.Int(0, 99) < chance;
++			info->nextCrouchRoll = now + m_rng.Float(1.5f, 3.5f);
++		}
++
++		if (info->crouching)
++		{
++			bot->GetControlInterface()->PressCrouchButton(0.2f);
++		}
++	}
++
+ 	bool CPodBotManager::ShouldShootThrough(CCSSBot* bot, const CKnownEntity* threat, const CBotWeapon* weapon)
+ 	{
+ 		if (!m_loaded || threat == nullptr || weapon == nullptr || threat->IsVisibleNow() || !m_settings.GetBool("pb_shootthruwalls", false))
+diff --git a/extension/podbot/podbot_manager.h b/extension/podbot/podbot_manager.h
+index 3b9521d..3dfb054 100644
+--- a/extension/podbot/podbot_manager.h
++++ b/extension/podbot/podbot_manager.h
+@@ -84,6 +84,9 @@ namespace podbot
+ 		void OnFollowMe(int clientIndex);
+ 		float GetFollowDuration() const { return m_settings.GetFloat("pb_followtime", 60.0f); }
+ 
++		// pb_crouch_chance: bots sometimes crouch while shooting at an enemy that is far away.
++		void OnFireAtEnemy(CCSSBot* bot, const CKnownEntity* threat, const CBotWeapon* weapon);
++
+ 		// Chat events
+ 		void OnOtherKilled(CCSSBot* bot, CBaseEntity* victim, CBaseEntity* attacker);
+ 		void OnBombPlanted(CCSSBot* bot);
+@@ -93,7 +96,7 @@ namespace podbot
+ 		void OnSight(CCSSBot* bot, CBaseEntity* subject);
+ 
+ 	private:
+-		struct BotInfo { int followClient = 0; float followUntil = 0.0f; float nextWallbangRoll = 0.0f; bool wallbang = false; const void* profilePtr = nullptr; int desiredTeam = 0; int desiredClass = 0; int teamAttempts = 0; float nextTeamAttempt = 0.0f; int skill = 100; Personality personality = Personality::Normal; float nextChatTime = 0.0f; float nextDeadChat = 0.0f; float nextRadio = 0.0f; };
++		struct BotInfo { float nextCrouchRoll = 0.0f; bool crouching = false; int followClient = 0; float followUntil = 0.0f; float nextWallbangRoll = 0.0f; bool wallbang = false; const void* profilePtr = nullptr; int desiredTeam = 0; int desiredClass = 0; int teamAttempts = 0; float nextTeamAttempt = 0.0f; int skill = 100; Personality personality = Personality::Normal; float nextChatTime = 0.0f; float nextDeadChat = 0.0f; float nextRadio = 0.0f; };
+ 		struct PendingSay { const CBaseBot* bot; float time; std::string msg; };
+ 
+ 		const void* ApplyProfile(CBaseBot* bot, int skill, Personality p); // returns the profile that was set
+@@ -103,6 +106,8 @@ namespace podbot
+ 		ChatContext MakeContext(const CCSSBot* bot, const std::string& victimName);
+ 		void Say(CBaseBot* bot, std::string msg);
+ 		bool RadioAllowed(BotInfo& info, int chance);
++		void CountPlayers(int& humans, int& bots) const;
++		bool NameInUse(const std::string& name) const;
+ 		void UpdateAutoKill(float now);
+ 		void UpdateTeams(float now);
+ 		float m_humansDeadSince = 0.0f;

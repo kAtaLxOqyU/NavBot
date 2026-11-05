@@ -96,6 +96,12 @@ namespace podbot
 		}
 
 		m_loaded = true;
+
+		for (auto& entry : m_info)
+		{
+			entry.second.profilePtr = nullptr; // ReapplyProfiles() then rebuilds each bot's skill and aim with the new settings
+		}
+
 		rootconsole->ConsolePrint("[PODBot] Loaded: %i names, %i chat replies.", static_cast<int>(m_names.Size()), static_cast<int>(m_chat.Replies().size()));
 		return true;
 	}
@@ -141,10 +147,61 @@ namespace podbot
 		return profile.get();
 	}
 
+	void CPodBotManager::CountPlayers(int& humans, int& bots) const
+	{
+		humans = 0;
+		bots = 0;
+
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		{
+			SourceMod::IGamePlayer* gp = playerhelpers->GetGamePlayer(i);
+
+			if (gp == nullptr || !gp->IsInGame() || gp->IsSourceTV())
+			{
+				continue;
+			}
+
+			if (gp->IsFakeClient())
+			{
+				bots++;
+			}
+			else
+			{
+				humans++;
+			}
+		}
+	}
+
+	bool CPodBotManager::NameInUse(const std::string& name) const
+	{
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		{
+			SourceMod::IGamePlayer* gp = playerhelpers->GetGamePlayer(i);
+
+			if (gp != nullptr && gp->IsInGame() && gp->GetName() != nullptr && CleanPlayerName(gp->GetName()) == name)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	void CPodBotManager::AddBot(int skill, int personality, const std::string& name, int team, int model)
 	{
 		if (!m_loaded && !Load())
 		{
+			return;
+		}
+
+		// never fill the last slot: a human must always be able to join (the old behaviour added bots and then kicked them)
+		int humans = 0;
+		int bots = 0;
+		CountPlayers(humans, bots);
+
+		if (humans + bots >= gpGlobals->maxClients - 1)
+		{
+			rootconsole->ConsolePrint("[PODBot] Not adding a bot: the server has no free slot left (it keeps one for a player).");
 			return;
 		}
 
@@ -157,7 +214,21 @@ namespace podbot
 
 		skill = std::max(0, std::min(100, skill));
 		Personality p = (personality >= 1 && personality <= 3) ? static_cast<Personality>(personality) : static_cast<Personality>(m_rng.Int(1, 3));
-		std::string base = name.empty() ? m_names.Pick(m_rng) : name;
+		std::string base = name;
+
+		if (base.empty())
+		{
+			// avoid two bots with the same name (Source would show "(1)" in front of the second one)
+			for (int attempt = 0; attempt < 40; attempt++)
+			{
+				base = m_names.Pick(m_rng);
+
+				if (!NameInUse(base))
+				{
+					break;
+				}
+			}
+		}
 		std::string full = NameList::Format(base, p, skill, m_settings.GetInt("pb_detailnames", 1));
 
 		edict_t* edict = nullptr;
@@ -207,7 +278,7 @@ namespace podbot
 	{
 		int maxbots = m_settings.GetInt("pb_maxbots", 16);
 
-		if (maxbots <= 0)
+		if (maxbots <= 0 || maxbots > gpGlobals->maxClients - 1)
 		{
 			maxbots = gpGlobals->maxClients - 1;
 		}
@@ -357,7 +428,7 @@ namespace podbot
 
 		m_lastHumans = humans;
 
-		if (humans + bots > limit && bots > minbots) // server became too full
+		if (humans + bots > gpGlobals->maxClients - 1 && bots > minbots) // no free slot left for a player
 		{
 			extmanager->RemoveRandomBot("Server is full");
 		}
@@ -490,7 +561,7 @@ namespace podbot
 	ChatContext CPodBotManager::MakeContext(const CCSSBot* bot, const std::string& victimName)
 	{
 		ChatContext c;
-		c.lastVictim = victimName;
+		c.lastVictim = CleanPlayerName(victimName);
 		c.mapName = gamehelpers->GetCurrentMap();
 		c.timeLeft = "some time"; // TODO: read the real round timer
 		std::vector<std::string> mates;
@@ -508,13 +579,13 @@ namespace podbot
 
 			if (other.IsAlive() && csslib::GetEntityCSSTeam(other.GetEntity()) == bot->GetMyCSSTeam())
 			{
-				mates.push_back(gp->GetName());
+				mates.push_back(CleanPlayerName(gp->GetName()));
 			}
 		}
 
 		c.aliveMate = mates.empty() ? std::string("everyone") : mates[m_rng.Index(mates.size())];
 		c.topFragger = c.aliveMate; // TODO: use the real scoreboard leader
-		c.replyTo = victimName;
+		c.replyTo = CleanPlayerName(victimName);
 		return c;
 	}
 
@@ -548,7 +619,7 @@ namespace podbot
 			}
 		}
 
-		return names.empty() ? std::string("everyone") : names[m_rng.Index(names.size())];
+		return names.empty() ? std::string("everyone") : CleanPlayerName(names[m_rng.Index(names.size())]);
 	}
 
 	// Sends delayed replies and lets dead bots chat ([DEADCHAT]).
@@ -793,6 +864,36 @@ namespace podbot
 		out[1] = hint.pos[1];
 		out[2] = hint.pos[2];
 		return true;
+	}
+
+	void CPodBotManager::OnFireAtEnemy(CCSSBot* bot, const CKnownEntity* threat, const CBotWeapon* weapon)
+	{
+		const int chance = m_settings.GetInt("pb_crouch_chance", 35);
+
+		if (!m_loaded || chance <= 0 || threat == nullptr || weapon == nullptr || !threat->IsVisibleNow())
+		{
+			return;
+		}
+
+		BotInfo* info = Find(bot);
+
+		if (info == nullptr || weapon->GetWeaponInfo()->GetSlot() != counterstrikesource::CSS_WEAPON_SLOT_PRIMARY)
+		{
+			return;
+		}
+
+		const float now = gpGlobals->curtime;
+
+		if (now >= info->nextCrouchRoll) // decide again every couple of seconds
+		{
+			info->crouching = bot->GetRangeTo(threat->GetEntity()) >= 700.0f && m_rng.Int(0, 99) < chance;
+			info->nextCrouchRoll = now + m_rng.Float(1.5f, 3.5f);
+		}
+
+		if (info->crouching)
+		{
+			bot->GetControlInterface()->PressCrouchButton(0.2f);
+		}
 	}
 
 	bool CPodBotManager::ShouldShootThrough(CCSSBot* bot, const CKnownEntity* threat, const CBotWeapon* weapon)

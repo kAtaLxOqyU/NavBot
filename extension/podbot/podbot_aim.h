@@ -16,7 +16,11 @@ struct AimParams {
 	int   type = 4;                    // pb_aim_type: 1 snap, 2 constant velocity, 3/4 spring
 	float stiffX = 13.0f, stiffY = 13.0f;
 	float dampX = 0.22f,  dampY = 0.22f;
-	float dampScale = 1.0f;                    // pb_aim_damping_scale (CS:S edition): multiplies both damper values
+	float dampScale = 3.0f;                    // pb_aim_damping_scale (CS:S edition): multiplies both damper values
+	float idlePitchScale = 0.4f;               // pb_aim_idle_pitch_scale: when aiming at nothing, how much of the up/down angle is used
+	float idlePitchLimit = 15.0f;              // pb_aim_idle_pitch_limit: ...and the most the view may tilt up or down then (degrees)
+	float pitchSpeedRatio = 0.6f;              // pb_aim_pitch_speed_ratio: up/down turns are slower than left/right turns
+	float disturbSeconds = 0.01f;              // cross-axis disturbance = influence * other axis speed * this
 	float devX = 2.0f,    devY = 1.0f;          // idle error margin (game units)
 	float infXonY = 0.25f, infYonX = 0.17f;     // cross-axis disturbance
 	float offsetDelay = 1.2f;                   // seconds between new idle offsets

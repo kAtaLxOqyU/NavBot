@@ -29,6 +29,10 @@ private:
 	std::mt19937 m_;
 };
 
+// Player name for chat: drops Source's "(1)" duplicate prefix and, for PODBot names, the [POD]/[P*D]/[P0D] prefix and
+// the "(skill)" suffix. "(1)[P*D] Jack_Nicholson (100)" becomes "Jack_Nicholson".
+std::string CleanPlayerName(const std::string& name);
+
 // ---- podbot.cfg (pb_* settings and "pb add"-style commands) ----
 struct ConsoleCommand { std::string verb; std::vector<std::string> args; };
 

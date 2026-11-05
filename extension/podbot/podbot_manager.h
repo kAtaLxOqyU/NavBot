@@ -84,6 +84,9 @@ namespace podbot
 		void OnFollowMe(int clientIndex);
 		float GetFollowDuration() const { return m_settings.GetFloat("pb_followtime", 60.0f); }
 
+		// pb_crouch_chance: bots sometimes crouch while shooting at an enemy that is far away.
+		void OnFireAtEnemy(CCSSBot* bot, const CKnownEntity* threat, const CBotWeapon* weapon);
+
 		// Chat events
 		void OnOtherKilled(CCSSBot* bot, CBaseEntity* victim, CBaseEntity* attacker);
 		void OnBombPlanted(CCSSBot* bot);
@@ -93,7 +96,7 @@ namespace podbot
 		void OnSight(CCSSBot* bot, CBaseEntity* subject);
 
 	private:
-		struct BotInfo { int followClient = 0; float followUntil = 0.0f; float nextWallbangRoll = 0.0f; bool wallbang = false; const void* profilePtr = nullptr; int desiredTeam = 0; int desiredClass = 0; int teamAttempts = 0; float nextTeamAttempt = 0.0f; int skill = 100; Personality personality = Personality::Normal; float nextChatTime = 0.0f; float nextDeadChat = 0.0f; float nextRadio = 0.0f; };
+		struct BotInfo { float nextCrouchRoll = 0.0f; bool crouching = false; int followClient = 0; float followUntil = 0.0f; float nextWallbangRoll = 0.0f; bool wallbang = false; const void* profilePtr = nullptr; int desiredTeam = 0; int desiredClass = 0; int teamAttempts = 0; float nextTeamAttempt = 0.0f; int skill = 100; Personality personality = Personality::Normal; float nextChatTime = 0.0f; float nextDeadChat = 0.0f; float nextRadio = 0.0f; };
 		struct PendingSay { const CBaseBot* bot; float time; std::string msg; };
 
 		const void* ApplyProfile(CBaseBot* bot, int skill, Personality p); // returns the profile that was set
@@ -103,6 +106,8 @@ namespace podbot
 		ChatContext MakeContext(const CCSSBot* bot, const std::string& victimName);
 		void Say(CBaseBot* bot, std::string msg);
 		bool RadioAllowed(BotInfo& info, int chance);
+		void CountPlayers(int& humans, int& bots) const;
+		bool NameInUse(const std::string& name) const;
 		void UpdateAutoKill(float now);
 		void UpdateTeams(float now);
 		float m_humansDeadSince = 0.0f;

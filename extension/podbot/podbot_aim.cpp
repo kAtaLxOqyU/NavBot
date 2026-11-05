@@ -20,6 +20,9 @@ AimParams AimParams::FromSettings(const Settings& s)
 	p.dampX = s.GetFloat("pb_aim_damper_coefficient_x", p.dampX);
 	p.dampY = s.GetFloat("pb_aim_damper_coefficient_y", p.dampY);
 	p.dampScale = s.GetFloat("pb_aim_damping_scale", p.dampScale);
+	p.idlePitchScale = s.GetFloat("pb_aim_idle_pitch_scale", p.idlePitchScale);
+	p.idlePitchLimit = s.GetFloat("pb_aim_idle_pitch_limit", p.idlePitchLimit);
+	p.pitchSpeedRatio = s.GetFloat("pb_aim_pitch_speed_ratio", p.pitchSpeedRatio);
 	p.devX = s.GetFloat("pb_aim_deviation_x", p.devX);
 	p.devY = s.GetFloat("pb_aim_deviation_y", p.devY);
 	p.infXonY = s.GetFloat("pb_aim_influence_x_on_y", p.infXonY);
@@ -77,9 +80,13 @@ Angles SpringAim::Update(const Angles& desired, bool hasTarget, float maxTurn, f
 		m_timer = m_rng.Float(0.2f * m_p.offsetDelay, m_p.offsetDelay);
 	}
 	Angles target = desired;
-	if (!hasTarget && distance > 1.0f) {      // the error margin only applies when aiming at nothing
-		target.pitch += std::atan2(m_devP, distance) * kRadToDeg;
-		target.yaw += std::atan2(m_devY, distance) * kRadToDeg;
+	if (!hasTarget) {
+		// Aiming at nothing in particular (walking, scanning): keep the view near level instead of
+		// staring at the floor or the sky, and add the small idle error margin.
+		target.pitch = Clamp(target.pitch * m_p.idlePitchScale, -m_p.idlePitchLimit, m_p.idlePitchLimit);
+		const float dist = std::max(distance, 100.0f);   // a very close aim point must not turn into a big angle
+		target.pitch += std::atan2(m_devP, dist) * kRadToDeg;
+		target.yaw += std::atan2(m_devY, dist) * kRadToDeg;
 	}
 
 	const float scale = hasTarget ? 1.0f : m_p.noTargetSlowdown;
@@ -89,15 +96,21 @@ Angles SpringAim::Update(const Angles& desired, bool hasTarget, float maxTurn, f
 	const float h = dt / static_cast<float>(steps);
 
 	for (int i = 0; i < steps; ++i) {
-		float eP = target.pitch - m_cur.pitch;
-		float eY = WrapDeg(target.yaw - m_cur.yaw);
+		// Moving the crosshair on one axis disturbs the other one a little (pb_aim_influence_*):
+		// a small offset proportional to how fast the other axis is turning.
+		const float disturbP = m_p.infYonX * m_velY * m_p.disturbSeconds;
+		const float disturbY = m_p.infXonY * m_velP * m_p.disturbSeconds;
+		float eP = target.pitch + disturbP - m_cur.pitch;
+		float eY = WrapDeg(target.yaw + disturbY - m_cur.yaw);
 		float aP = wP * wP * eP - 2.0f * dX * wP * m_velP;
 		float aY = wY * wY * eY - 2.0f * dY * wY * m_velY;
-		float aP2 = aP + m_p.infYonX * aY;     // yaw motion disturbs pitch
-		float aY2 = aY + m_p.infXonY * aP;     // pitch motion disturbs yaw
-		m_velP += aP2 * h;
-		m_velY += aY2 * h;
-		if (maxTurn > 0.0f) { m_velP = Clamp(m_velP, -maxTurn, maxTurn); m_velY = Clamp(m_velY, -maxTurn, maxTurn); }
+		m_velP += aP * h;
+		m_velY += aY * h;
+		if (maxTurn > 0.0f) {
+			const float maxP = maxTurn * m_p.pitchSpeedRatio;
+			m_velP = Clamp(m_velP, -maxP, maxP);
+			m_velY = Clamp(m_velY, -maxTurn, maxTurn);
+		}
 		m_cur.pitch += m_velP * h;
 		m_cur.yaw += m_velY * h;
 	}
