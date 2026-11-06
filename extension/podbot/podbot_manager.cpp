@@ -54,7 +54,10 @@ namespace podbot
 
 		bool Turn(CBaseBot* bot, const QAngle& current, const QAngle& desired, bool hasTarget, float distance, float dt, QAngle& out) override
 		{
-			m_aim.SyncCurrent(Angles{ current.x, current.y });
+			// Work on the bot's real eye angles. 'current' also contains the weapon's recoil kick, which the engine adds
+			// by itself: feeding it back in made every shot push the view up and the spring pull it back down.
+			const QAngle eye = bot->GetEyeAngles();
+			m_aim.SyncCurrent(Angles{ eye.x, eye.y });
 			const Angles result = m_aim.Update(Angles{ desired.x, desired.y }, hasTarget, m_maxTurn, distance, dt);
 			out.x = result.pitch;
 			out.y = result.yaw;
