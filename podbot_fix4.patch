@@ -1,0 +1,83 @@
+diff --git a/configs/podbot/podbot.cfg b/configs/podbot/podbot.cfg
+index 1410597..54acfb6 100644
+--- a/configs/podbot/podbot.cfg
++++ b/configs/podbot/podbot.cfg
+@@ -63,7 +63,8 @@ pb_radio_takingfire_chance 30
+ pb_radio_enemyspot_chance 25
+ pb_radio_cooldown 10
+ 
+-# Aim system: 1 inhuman turns, 2 constant angle velocity, 3 botaim1, 4 botaim2
++# Aim system: 0 NavBot's own aim (no PODBot aim at all, handy for comparing), 1 inhuman turns,
++# 2 constant angle velocity, 3 botaim1, 4 botaim2
+ pb_aim_type 4
+ pb_aim_spring_stiffness_x 13.0
+ pb_aim_spring_stiffness_y 13.0
+diff --git a/extension/bot/interfaces/playercontrol.cpp b/extension/bot/interfaces/playercontrol.cpp
+index 3074301..3962d4c 100644
+--- a/extension/bot/interfaces/playercontrol.cpp
++++ b/extension/bot/interfaces/playercontrol.cpp
+@@ -271,7 +271,7 @@ void IPlayerController::RunLook()
+ 		m_isOnTarget = false; // aim is off target
+ 	}
+ 
+-	if (!m_aimOverride || !m_aimOverride->Turn(me, currentAngles, desiredAngles, m_lookentity.IsValid(), aimDistance, deltaTime, finalAngles))
++	if (!m_aimOverride || !m_aimOverride->Turn(me, currentAngles, desiredAngles, m_lookentity.IsValid(), static_cast<int>(m_priority), aimDistance, deltaTime, finalAngles))
+ 	{
+ 		finalAngles.x = ApproachAngle(desiredAngles.x, currentAngles.x, m_aimSpeed * deltaTime);
+ 		finalAngles.y = ApproachAngle(desiredAngles.y, currentAngles.y, m_aimSpeed * deltaTime);
+diff --git a/extension/bot/interfaces/playercontrol.h b/extension/bot/interfaces/playercontrol.h
+index 678aa27..63b9dbe 100644
+--- a/extension/bot/interfaces/playercontrol.h
++++ b/extension/bot/interfaces/playercontrol.h
+@@ -25,7 +25,8 @@ public:
+ 	// Lets the override shift the point being aimed at (for example skill based aim error).
+ 	virtual Vector AdjustTarget(CBaseBot* bot, const Vector& target, bool isEntity) = 0;
+ 	// Writes the new view angles to 'out' and returns true, or returns false to use the default turn.
+-	virtual bool Turn(CBaseBot* bot, const QAngle& current, const QAngle& desired, bool hasTarget, float distance, float dt, QAngle& out) = 0;
++	// 'priority' is the IPlayerController::LookPriority of the current look request (idle and path looks are low priority).
++	virtual bool Turn(CBaseBot* bot, const QAngle& current, const QAngle& desired, bool hasTarget, int priority, float distance, float dt, QAngle& out) = 0;
+ };
+ 
+ // Interface responsible for controller the bot's input
+diff --git a/extension/podbot/podbot_manager.cpp b/extension/podbot/podbot_manager.cpp
+index ccddf87..5ed1039 100644
+--- a/extension/podbot/podbot_manager.cpp
++++ b/extension/podbot/podbot_manager.cpp
+@@ -52,13 +52,16 @@ namespace podbot
+ 			return target + m_offset;
+ 		}
+ 
+-		bool Turn(CBaseBot* bot, const QAngle& current, const QAngle& desired, bool hasTarget, float distance, float dt, QAngle& out) override
++		bool Turn(CBaseBot* bot, const QAngle& current, const QAngle& desired, bool hasTarget, int priority, float distance, float dt, QAngle& out) override
+ 		{
+ 			// Work on the bot's real eye angles. 'current' also contains the weapon's recoil kick, which the engine adds
+ 			// by itself: feeding it back in made every shot push the view up and the spring pull it back down.
+ 			const QAngle eye = bot->GetEyeAngles();
+ 			m_aim.SyncCurrent(Angles{ eye.x, eye.y });
+-			const Angles result = m_aim.Update(Angles{ desired.x, desired.y }, hasTarget, m_maxTurn, distance, dt);
++			// Only idle and path looks are "relaxed": they keep the view near level and turn more slowly. Every other look
++			// (enemies, searching, defusing the bomb, using things, jumping, ladders) needs the exact angle, so it gets none of that.
++			const bool relaxed = priority <= static_cast<int>(IPlayerController::LOOK_PATH);
++			const Angles result = m_aim.Update(Angles{ desired.x, desired.y }, !relaxed, m_maxTurn, distance, dt);
+ 			out.x = result.pitch;
+ 			out.y = result.yaw;
+ 			out.z = 0.0f;
+@@ -146,7 +149,17 @@ namespace podbot
+ 
+ 		// PODBot aim: spring-damper turn + skill based aim offsets
+ 		const unsigned seed = static_cast<unsigned>(m_rng.Int(1, 1 << 30));
+-		bot->GetControlInterface()->SetAimOverride(std::make_shared<PodAimOverride>(AimParams::FromSettings(m_settings), b, seed));
++		const AimParams aimParams = AimParams::FromSettings(m_settings);
++
++		if (aimParams.type <= 0)
++		{
++			bot->GetControlInterface()->SetAimOverride(nullptr); // pb_aim_type 0: NavBot's own aim, no PODBot aim at all
++		}
++		else
++		{
++			bot->GetControlInterface()->SetAimOverride(std::make_shared<PodAimOverride>(aimParams, b, seed));
++		}
++
+ 		return profile.get();
+ 	}
+ 

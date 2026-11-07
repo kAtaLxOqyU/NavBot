@@ -52,13 +52,16 @@ namespace podbot
 			return target + m_offset;
 		}
 
-		bool Turn(CBaseBot* bot, const QAngle& current, const QAngle& desired, bool hasTarget, float distance, float dt, QAngle& out) override
+		bool Turn(CBaseBot* bot, const QAngle& current, const QAngle& desired, bool hasTarget, int priority, float distance, float dt, QAngle& out) override
 		{
 			// Work on the bot's real eye angles. 'current' also contains the weapon's recoil kick, which the engine adds
 			// by itself: feeding it back in made every shot push the view up and the spring pull it back down.
 			const QAngle eye = bot->GetEyeAngles();
 			m_aim.SyncCurrent(Angles{ eye.x, eye.y });
-			const Angles result = m_aim.Update(Angles{ desired.x, desired.y }, hasTarget, m_maxTurn, distance, dt);
+			// Only idle and path looks are "relaxed": they keep the view near level and turn more slowly. Every other look
+			// (enemies, searching, defusing the bomb, using things, jumping, ladders) needs the exact angle, so it gets none of that.
+			const bool relaxed = priority <= static_cast<int>(IPlayerController::LOOK_PATH);
+			const Angles result = m_aim.Update(Angles{ desired.x, desired.y }, !relaxed, m_maxTurn, distance, dt);
 			out.x = result.pitch;
 			out.y = result.yaw;
 			out.z = 0.0f;
@@ -146,7 +149,17 @@ namespace podbot
 
 		// PODBot aim: spring-damper turn + skill based aim offsets
 		const unsigned seed = static_cast<unsigned>(m_rng.Int(1, 1 << 30));
-		bot->GetControlInterface()->SetAimOverride(std::make_shared<PodAimOverride>(AimParams::FromSettings(m_settings), b, seed));
+		const AimParams aimParams = AimParams::FromSettings(m_settings);
+
+		if (aimParams.type <= 0)
+		{
+			bot->GetControlInterface()->SetAimOverride(nullptr); // pb_aim_type 0: NavBot's own aim, no PODBot aim at all
+		}
+		else
+		{
+			bot->GetControlInterface()->SetAimOverride(std::make_shared<PodAimOverride>(aimParams, b, seed));
+		}
+
 		return profile.get();
 	}
 

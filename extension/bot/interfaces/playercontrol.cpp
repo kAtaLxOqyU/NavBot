@@ -271,7 +271,7 @@ void IPlayerController::RunLook()
 		m_isOnTarget = false; // aim is off target
 	}
 
-	if (!m_aimOverride || !m_aimOverride->Turn(me, currentAngles, desiredAngles, m_lookentity.IsValid(), aimDistance, deltaTime, finalAngles))
+	if (!m_aimOverride || !m_aimOverride->Turn(me, currentAngles, desiredAngles, m_lookentity.IsValid(), static_cast<int>(m_priority), aimDistance, deltaTime, finalAngles))
 	{
 		finalAngles.x = ApproachAngle(desiredAngles.x, currentAngles.x, m_aimSpeed * deltaTime);
 		finalAngles.y = ApproachAngle(desiredAngles.y, currentAngles.y, m_aimSpeed * deltaTime);
