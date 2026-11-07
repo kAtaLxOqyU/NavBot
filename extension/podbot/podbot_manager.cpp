@@ -1,6 +1,8 @@
 #include NAVBOT_PCH_FILE
 #include <algorithm>
 #include <cmath>
+#include <cstdarg>
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -12,6 +14,7 @@
 #include <bot/css/cssbot.h>
 #include <bot/interfaces/profile.h>
 #include <bot/interfaces/playercontrol.h>
+#include <sdkports/debugoverlay_shared.h>
 #include "podbot_manager.h"
 #include "podbot_aim.h"
 
@@ -65,6 +68,19 @@ namespace podbot
 			out.x = result.pitch;
 			out.y = result.yaw;
 			out.z = 0.0f;
+
+			if (PodBot().DebugWants(bot, kDebugAim) && gpGlobals->curtime >= m_nextDebugDraw)
+			{
+				static const char* const names[] = { "IDLE", "PATH", "INTERESTING", "ALLY", "SEARCH", "ALERT", "DANGER", "USE", "COMBAT", "SUPPORT", "PRIORITY", "MOVEMENT", "CRITICAL", "MANDATORY" };
+				char line1[96];
+				char line2[96];
+				ke::SafeSprintf(line1, sizeof(line1), "pitch %.1f (want %.1f)  yaw %.0f (want %.0f)", result.pitch, WrapDeg(desired.x), result.yaw, WrapDeg(desired.y));
+				ke::SafeSprintf(line2, sizeof(line2), "look %s %s%s  dist %.0f", (priority >= 0 && priority < 14) ? names[priority] : "?", hasTarget ? "entity" : "position", relaxed ? " (relaxed)" : "", distance);
+				NDebugOverlay::EntityText(bot->GetIndex(), 0, line1, 0.25f, 255, 255, 0, 255);
+				NDebugOverlay::EntityText(bot->GetIndex(), 1, line2, 0.25f, 120, 255, 120, 255);
+				m_nextDebugDraw = gpGlobals->curtime + 0.1f;
+			}
+
 			return true;
 		}
 
@@ -75,6 +91,7 @@ namespace podbot
 		Rng m_rng;
 		float m_maxTurn = 0.0f;
 		float m_nextOffsetTime = 0.0f;
+		float m_nextDebugDraw = 0.0f;
 		Vector m_offset = Vector(0.0f, 0.0f, 0.0f);
 	};
 
@@ -102,6 +119,7 @@ namespace podbot
 		}
 
 		m_loaded = true;
+		m_debug = ParseDebugFlags(m_settings.GetString("pb_debug", "off"));
 
 		for (auto& entry : m_info)
 		{
@@ -161,6 +179,61 @@ namespace podbot
 		}
 
 		return profile.get();
+	}
+
+	std::string CPodBotManager::DebugName(const CBaseBot* bot) const
+	{
+		if (bot != nullptr)
+		{
+			SourceMod::IGamePlayer* gp = playerhelpers->GetGamePlayer(bot->GetIndex());
+
+			if (gp != nullptr && gp->GetName() != nullptr)
+			{
+				return gp->GetName();
+			}
+		}
+
+		return "server";
+	}
+
+	bool CPodBotManager::DebugWants(const CBaseBot* bot, unsigned flag) const
+	{
+		if ((m_debug & flag) == 0)
+		{
+			return false;
+		}
+
+		if (m_debugFilter.empty() || bot == nullptr)
+		{
+			return true;
+		}
+
+		auto lower = [](std::string text) { for (auto& c : text) { c = static_cast<char>(std::tolower(static_cast<unsigned char>(c))); } return text; };
+		return lower(DebugName(bot)).find(lower(m_debugFilter)) != std::string::npos;
+	}
+
+	void CPodBotManager::DebugLog(const CBaseBot* bot, const char* fmt, ...) const
+	{
+		if (!DebugWants(bot, kDebugEvents))
+		{
+			return;
+		}
+
+		char text[256];
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(text, sizeof(text), fmt, args);
+		va_end(args);
+
+		const std::string name = DebugName(bot);
+		rootconsole->ConsolePrint("[PODBot] %s: %s", name.c_str(), text);
+		smutils->LogMessage(myself, "[PODBot] %s: %s", name.c_str(), text);
+	}
+
+	void CPodBotManager::Radio(CBaseBot* bot, const char* command)
+	{
+		DebugLog(bot, "radio: %s", command);
+		bot->FakeClientCommand(command);
 	}
 
 	void CPodBotManager::CountPlayers(int& humans, int& bots) const
@@ -288,6 +361,7 @@ namespace podbot
 		info.desiredClass = (skin >= 1 && skin <= 4) ? skin : ((model >= 1 && model <= 4) ? model : 0);
 		info.nextTeamAttempt = gpGlobals->curtime + 3.0f; // give NavBot's own join logic time first
 		m_info[bot] = info;
+		DebugLog(bot, "added: skill %d, personality %d, team %d, class %d", skill, static_cast<int>(p), info.desiredTeam, info.desiredClass);
 	}
 
 	void CPodBotManager::FillServer(int skill, int personality, int team, int model)
@@ -410,6 +484,7 @@ namespace podbot
 			}
 			else if (bots > target)
 			{
+				DebugLog(nullptr, "removing a bot: PODBot quota");
 				extmanager->RemoveRandomBot("PODBot quota");
 			}
 
@@ -424,7 +499,8 @@ namespace podbot
 
 		if (humans > m_lastHumans && bots > minbots)
 		{
-			extmanager->RemoveRandomBot("Making room for a player");
+			DebugLog(nullptr, "removing a bot: Making room for a player");
+				extmanager->RemoveRandomBot("Making room for a player");
 			m_kicked++;
 			m_lastHumans++;
 			return;
@@ -446,7 +522,8 @@ namespace podbot
 
 		if (humans + bots > gpGlobals->maxClients - 1 && bots > minbots) // no free slot left for a player
 		{
-			extmanager->RemoveRandomBot("Server is full");
+			DebugLog(nullptr, "removing a bot: Server is full");
+				extmanager->RemoveRandomBot("Server is full");
 		}
 	}
 
@@ -610,6 +687,7 @@ namespace podbot
 		// the message goes through a fake client command: keep ';' and '"' from breaking it
 		std::replace(msg.begin(), msg.end(), ';', ',');
 		std::replace(msg.begin(), msg.end(), '"', '\'');
+		DebugLog(bot, "chat: %s", msg.c_str());
 		bot->SendChatMessage(msg.c_str());
 	}
 
@@ -826,6 +904,7 @@ namespace podbot
 			if (info != nullptr && &*bot->GetDifficultyProfile() != info->profilePtr)
 			{
 				info->profilePtr = ApplyProfile(bot, info->skill, info->personality);
+				DebugLog(bot, "skill and aim profile applied again");
 			}
 		};
 		extmanager->ForEachBot(check);
@@ -856,6 +935,7 @@ namespace podbot
 			bot->FakeClientCommand(command);
 			ke::SafeSprintf(command, sizeof(command), "joinclass %d", info->desiredClass);
 			bot->FakeClientCommand(command);
+			DebugLog(b, "jointeam %d, joinclass %d (try %d)", info->desiredTeam, info->desiredClass, info->teamAttempts + 1);
 			info->teamAttempts++;
 			info->nextTeamAttempt = now + 3.0f;
 		};
@@ -879,6 +959,7 @@ namespace podbot
 		out[0] = hint.pos[0];
 		out[1] = hint.pos[1];
 		out[2] = hint.pos[2];
+		DebugLog(bot, "camp spot from hints: %.0f %.0f %.0f", out[0], out[1], out[2]);
 		return true;
 	}
 
@@ -904,6 +985,7 @@ namespace podbot
 		{
 			info->crouching = bot->GetRangeTo(threat->GetEntity()) >= 700.0f && m_rng.Int(0, 99) < chance;
 			info->nextCrouchRoll = now + m_rng.Float(1.5f, 3.5f);
+			DebugLog(bot, "crouch while shooting: %s", info->crouching ? "yes" : "no");
 		}
 
 		if (info->crouching)
@@ -956,6 +1038,7 @@ namespace podbot
 		{
 			info->wallbang = m_rng.Int(0, 99) < chance;
 			info->nextWallbangRoll = now + 2.0f;
+			DebugLog(bot, "shoot through walls: %s (%d%% chance)", info->wallbang ? "yes" : "no", chance);
 		}
 
 		return info->wallbang;
@@ -1017,10 +1100,11 @@ namespace podbot
 			info->followClient = clientIndex;
 			info->followUntil = now + GetFollowDuration();
 			bot->OnVoiceCommand(human.GetEntity(), kVoiceFollowMe);
+			DebugLog(bot, "told to follow client %d for %.0f s", clientIndex, GetFollowDuration());
 
 			if (m_rng.Int(0, 99) < 50 && m_settings.GetBool("pb_radio", true))
 			{
-				bot->FakeClientCommand("roger");
+				Radio(bot, "roger");
 			}
 
 			following++;
@@ -1084,7 +1168,7 @@ namespace podbot
 
 		if (RadioAllowed(*info, m_settings.GetInt("pb_radio_takingfire_chance", 30)))
 		{
-			bot->FakeClientCommand(m_rng.Int(0, 1) ? "takingfire" : "needbackup");
+			Radio(bot, m_rng.Int(0, 1) ? "takingfire" : "needbackup");
 		}
 	}
 
@@ -1099,7 +1183,7 @@ namespace podbot
 
 		if (RadioAllowed(*info, m_settings.GetInt("pb_radio_enemyspot_chance", 25)))
 		{
-			bot->FakeClientCommand("enemyspot");
+			Radio(bot, "enemyspot");
 		}
 	}
 
@@ -1167,6 +1251,7 @@ namespace podbot
 
 		float& deaths = m_experience[area->GetID()][team];
 		deaths = std::min(50.0f, deaths + 1.0f);
+		DebugLog(bot, "died in nav area %u, danger there is now %.0f", area->GetID(), deaths);
 	}
 
 	float CPodBotManager::GetExperienceCost(CCSSBot* bot, CNavArea* area) const
@@ -1215,7 +1300,7 @@ namespace podbot
 
 		if (IsEnemyPlayer(bot, victim) && RadioAllowed(*info, m_settings.GetInt("pb_radio_enemydown_chance", 20)))
 		{
-			bot->FakeClientCommand("enemydown");
+			Radio(bot, "enemydown");
 		}
 
 		if (!ChatAllowed(bot, *info, "pb_chat_killed_chance", 30))

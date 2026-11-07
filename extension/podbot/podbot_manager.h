@@ -87,6 +87,14 @@ namespace podbot
 		// pb_crouch_chance: bots sometimes crouch while shooting at an enemy that is far away.
 		void OnFireAtEnemy(CCSSBot* bot, const CKnownEntity* threat, const CBotWeapon* weapon);
 
+		// Debugging ("pb debug ..." or pb_debug in podbot.cfg): aim text above bots and a log of what they decide.
+		unsigned GetDebugFlags() const { return m_debug; }
+		void SetDebugFlags(unsigned flags) { m_debug = flags; }
+		const std::string& GetDebugFilter() const { return m_debugFilter; }
+		void SetDebugFilter(const std::string& text) { m_debugFilter = text; }
+		bool DebugWants(const CBaseBot* bot, unsigned flag) const;
+		void DebugLog(const CBaseBot* bot, const char* fmt, ...) const;
+
 		// Chat events
 		void OnOtherKilled(CCSSBot* bot, CBaseEntity* victim, CBaseEntity* attacker);
 		void OnBombPlanted(CCSSBot* bot);
@@ -106,6 +114,10 @@ namespace podbot
 		ChatContext MakeContext(const CCSSBot* bot, const std::string& victimName);
 		void Say(CBaseBot* bot, std::string msg);
 		bool RadioAllowed(BotInfo& info, int chance);
+		void Radio(CBaseBot* bot, const char* command);
+		std::string DebugName(const CBaseBot* bot) const;
+		unsigned m_debug = 0;
+		std::string m_debugFilter;
 		void CountPlayers(int& humans, int& bots) const;
 		bool NameInUse(const std::string& name) const;
 		void UpdateAutoKill(float now);

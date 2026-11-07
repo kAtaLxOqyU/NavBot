@@ -40,15 +40,17 @@ void SkillAimOffset(const SkillBracket& b, Rng& rng, float out[3]);
 class SpringAim {
 public:
 	explicit SpringAim(const AimParams& p = AimParams(), unsigned seed = 1) : m_p(p), m_rng(seed) {}
-	void Reset(const Angles& current) { m_cur = current; m_velP = m_velY = 0.0f; m_timer = 0.0f; m_devP = m_devY = 0.0f; }
+	// Angles may come in the game's 0..360 convention (VectorAngles gives 350 for 10 degrees UP): they are normalised here.
+	void Reset(const Angles& current) { m_cur = Normalise(current); m_velP = m_velY = 0.0f; m_timer = 0.0f; m_devP = m_devY = 0.0f; }
 	// desired: ideal view angles. maxTurn: angular speed cap in deg/s (0 = none).
 	// distance: units to the aim point (turns the idle error margin into an angle).
 	Angles Update(const Angles& desired, bool hasTarget, float maxTurn, float distance, float dt);
 	// Follows the real view angles (recoil, snaps) while keeping the angular velocity.
-	void SyncCurrent(const Angles& a) { m_cur = a; }
+	void SyncCurrent(const Angles& a) { m_cur = Normalise(a); }
 	const Angles& Current() const { return m_cur; }
 	float VelocityPitch() const { return m_velP; }
 	float VelocityYaw() const { return m_velY; }
+	static Angles Normalise(const Angles& a);   // pitch to -89..89, yaw to -180..180
 private:
 	AimParams m_p;
 	Rng m_rng;

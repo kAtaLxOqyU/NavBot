@@ -94,6 +94,26 @@ bool AllDigits(const std::string& s) { return !s.empty() && std::all_of(s.begin(
 
 } // namespace
 
+unsigned ParseDebugFlags(const std::string& words)
+{
+	unsigned flags = 0;
+	std::string word;
+	for (size_t i = 0; i <= words.size(); ++i) {
+		const char c = i < words.size() ? words[i] : ' ';
+		if (c == ' ' || c == ',' || c == '\t') {
+			word = Lower(word);
+			if (word == "all") flags = kDebugAll;
+			else if (word == "aim") flags |= kDebugAim;
+			else if (word == "event" || word == "events") flags |= kDebugEvents;
+			else if (word == "off" || word == "none" || word == "0") flags = 0;
+			word.clear();
+		} else {
+			word += c;
+		}
+	}
+	return flags;
+}
+
 std::string CleanPlayerName(const std::string& name)
 {
 	std::string s = Trim(name);

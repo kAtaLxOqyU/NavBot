@@ -52,8 +52,20 @@ void SkillAimOffset(const SkillBracket& b, Rng& rng, float out[3])
 	out[2] = rng.Float(-b.offZ, b.offZ);
 }
 
-Angles SpringAim::Update(const Angles& desired, bool hasTarget, float maxTurn, float distance, float dt)
+Angles SpringAim::Normalise(const Angles& a)
 {
+	Angles n;
+	n.pitch = Clamp(WrapDeg(a.pitch), -89.0f, 89.0f);
+	n.yaw = WrapDeg(a.yaw);
+	return n;
+}
+
+Angles SpringAim::Update(const Angles& desiredRaw, bool hasTarget, float maxTurn, float distance, float dt)
+{
+	// The game gives a target above eye level as a pitch near 360 (10 degrees up is 350). Without this the controller
+	// saw a 360 degree error and swung the view all the way down to the floor.
+	const Angles desired = Normalise(desiredRaw);
+
 	if (!(dt > 0.0f)) return m_cur;
 	dt = std::min(dt, 0.1f);
 

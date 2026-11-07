@@ -29,6 +29,11 @@ private:
 	std::mt19937 m_;
 };
 
+// Debug categories for "pb debug" / pb_debug: aim (text above each bot), events (console and log lines for decisions).
+constexpr unsigned kDebugAim = 1, kDebugEvents = 2, kDebugAll = 3;
+// "aim events", "all", "off" (also "none" and "0") -> flags. Unknown words are ignored.
+unsigned ParseDebugFlags(const std::string& words);
+
 // Player name for chat: drops Source's "(1)" duplicate prefix and, for PODBot names, the [POD]/[P*D]/[P0D] prefix and
 // the "(skill)" suffix. "(1)[P*D] Jack_Nicholson (100)" becomes "Jack_Nicholson".
 std::string CleanPlayerName(const std::string& name);
