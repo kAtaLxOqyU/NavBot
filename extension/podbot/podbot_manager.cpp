@@ -142,6 +142,24 @@ namespace podbot
 		profile->SetMinRecognitionTime(std::max(0.01f, m_rng.Float(b.minDelay, b.maxDelay)));
 		profile->SetAllowHeadshots(m_rng.Int(0, 99) < b.headshot);
 
+		// NavBot fills a new profile with RANDOM values (including how often a bot refreshes its target, 0.0001 to 1 s,
+		// its field of view and its sight and hearing range). Set every one of them from the skill so bots are consistent
+		// and a high skill bot tracks and sees as well as NavBot's best level does.
+		const float sharp = static_cast<float>(skill) / 100.0f;           // 0 (worst) .. 1 (best)
+		profile->SetAimTrackingInterval(0.02f + (1.0f - sharp) * 0.40f);  // skill 100: 0.02 s, skill 50: 0.22 s, skill 0: 0.42 s
+		profile->SetFOV(static_cast<int>(110.0f + sharp * 60.0f));        // 110 .. 170 degrees
+		profile->SetMaxVisionRange(static_cast<int>(4096.0f + sharp * 4096.0f));
+		profile->SetMaxHearingRange(static_cast<int>(1024.0f + sharp * 1024.0f));
+		profile->SetAbilityUsageInterval(0.05f);
+		profile->SetPredictProjectiles(skill >= 60);
+		profile->SetIsAllowedToDodge(skill >= 40);
+		profile->SetIsAllowedToUsePhysicsPrediction(skill >= 60);
+		profile->SetMaxPredictionIterations(skill >= 60 ? 4 : 2);
+		profile->SetDangerScanFrequency(0.25f + (1.0f - sharp) * 0.5f);
+		profile->SetDangerScanSize(800.0f);
+		profile->SetEnemyCloseRange(500.0f);
+		profile->SetEnemyFarRange(2000.0f);
+
 		switch (p)
 		{
 		case Personality::Aggressive:
@@ -149,16 +167,21 @@ namespace podbot
 			profile->SetTeamwork(20);
 			profile->SetHealthCriticalThreshold(0.10f);
 			profile->SetHealthLowThreshold(0.30f);
+			profile->SetRetreatFromNumericalDisadvantageThreshold(6);
 			break;
 		case Personality::Defensive:
 			profile->SetAggressiveness(10);
 			profile->SetTeamwork(60);
 			profile->SetHealthCriticalThreshold(0.25f);
 			profile->SetHealthLowThreshold(0.60f);
+			profile->SetRetreatFromNumericalDisadvantageThreshold(3);
 			break;
 		default:
 			profile->SetAggressiveness(40);
 			profile->SetTeamwork(40);
+			profile->SetHealthCriticalThreshold(0.25f);
+			profile->SetHealthLowThreshold(0.55f);
+			profile->SetRetreatFromNumericalDisadvantageThreshold(4);
 			break;
 		}
 
