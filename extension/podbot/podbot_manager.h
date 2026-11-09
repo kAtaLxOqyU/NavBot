@@ -21,6 +21,9 @@ namespace podbot
 	// Voice command id the manager sends to bots that must follow a player (see CCSSBotMainTask::OnVoiceCommand)
 	constexpr int kVoiceFollowMe = 0x50420001;
 
+	// Answer of the sniper scope policy (maps to NavBot's yes / no / undefined decision answers).
+	enum class ScopeAnswer { Undefined, Yes, No };
+
 	// PODBot-style layer for the Counter-Strike: Source bot (skills, personalities, names, chat).
 	// Buy decisions for one PODBot-managed bot (weapon lists are best first).
 	struct BuyPlan
@@ -95,6 +98,17 @@ namespace podbot
 		bool DebugWants(const CBaseBot* bot, unsigned flag) const;
 		void DebugLog(const CBaseBot* bot, const char* fmt, ...) const;
 
+		// Snipers (AWP, Scout, SG550, G3SG1): scoped state read from the player's FOV, scope in when camping or fighting,
+		// scope out while moving, check the scope more often. pb_sniper 0 turns all of this off.
+		ScopeAnswer ShouldScope(CCSSBot* bot, const CBotWeapon* weapon, bool wantsToScope, bool isScoped);
+		bool GetScopedState(const CBaseBot* owner, const CBotWeapon* weapon, bool& scoped);
+		float GetScopeToggleTime(CCSSBot* bot, float defaultTime);
+		int GetAwpHeadChance() const { return m_settings.GetInt("pb_awp_headshot_chance", 20); }
+
+		// A "pb_xxx value" typed in the console: changes the setting until the next reload (edit podbot.cfg to keep it).
+		// With no value it shows the current one. Returns the text to print.
+		std::string ConsoleSetting(const std::string& name, const std::string& value, bool hasValue);
+
 		// Chat events
 		void OnOtherKilled(CCSSBot* bot, CBaseEntity* victim, CBaseEntity* attacker);
 		void OnBombPlanted(CCSSBot* bot);
@@ -104,7 +118,7 @@ namespace podbot
 		void OnSight(CCSSBot* bot, CBaseEntity* subject);
 
 	private:
-		struct BotInfo { float nextCrouchRoll = 0.0f; bool crouching = false; int followClient = 0; float followUntil = 0.0f; float nextWallbangRoll = 0.0f; bool wallbang = false; const void* profilePtr = nullptr; int desiredTeam = 0; int desiredClass = 0; int teamAttempts = 0; float nextTeamAttempt = 0.0f; int skill = 100; Personality personality = Personality::Normal; float nextChatTime = 0.0f; float nextDeadChat = 0.0f; float nextRadio = 0.0f; };
+		struct BotInfo { int lastScopeAnswer = -1; float nextScopeLog = 0.0f; float stillSince = 0.0f; float nextCrouchRoll = 0.0f; bool crouching = false; int followClient = 0; float followUntil = 0.0f; float nextWallbangRoll = 0.0f; bool wallbang = false; const void* profilePtr = nullptr; int desiredTeam = 0; int desiredClass = 0; int teamAttempts = 0; float nextTeamAttempt = 0.0f; int skill = 100; Personality personality = Personality::Normal; float nextChatTime = 0.0f; float nextDeadChat = 0.0f; float nextRadio = 0.0f; };
 		struct PendingSay { const CBaseBot* bot; float time; std::string msg; };
 
 		const void* ApplyProfile(CBaseBot* bot, int skill, Personality p); // returns the profile that was set

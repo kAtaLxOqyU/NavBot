@@ -270,6 +270,8 @@ protected:
 	IntervalTimer& GetAttackTimer() { return m_attackTimer; }
 	// Timer used for toggling between scope/unscoped mode.
 	CountdownTimer& GetToggleScopeTimer() { return m_toggleScopeTimer; }
+	// Seconds between checks of the scope state. Mods can make it shorter for bots that should scope in or out faster.
+	virtual float GetToggleScopeCooldown() const { return TOGGLE_SCOPE_COOLDOWN_TIME; }
 	// Timer used for special weapon functions
 	CountdownTimer& GetSpecialWeaponFunctionTimer() { return m_useSpecialFuncTimer; }
 	CountdownTimer& GetWeaponSelectionTimer() { return m_selectWeaponTimer; }

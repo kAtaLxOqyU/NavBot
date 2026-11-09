@@ -1,0 +1,476 @@
+diff --git a/configs/podbot/podbot.cfg b/configs/podbot/podbot.cfg
+index e266af7..afbf190 100644
+--- a/configs/podbot/podbot.cfg
++++ b/configs/podbot/podbot.cfg
+@@ -43,6 +43,15 @@ pb_jasonmode 0
+ # CS:S edition: chance in percent that a bot crouches while shooting at an enemy 700+ units away
+ pb_crouch_chance 35
+ 
++# CS:S edition snipers (AWP, Scout, SG550, G3SG1). With pb_sniper 1 the scope state is read from the player's field
++# of view, bots scope in when they camp (stand still for pb_sniper_camp_time seconds) or when they fight, scope out
++# while they walk or run, and shoot only after the scope is in. pb_scope_toggle_time is how often the scope is
++# checked (seconds). The AWP aims at the body most of the time: pb_awp_headshot_chance is the % chance of a headshot.
++pb_sniper 1
++pb_sniper_camp_time 1.5
++pb_scope_toggle_time 0.4
++pb_awp_headshot_chance 20
++
+ # 0 none, 1 [POD] prefix + (skill), 2 prefix only, 3 (skill) only
+ pb_detailnames 1
+ 
+diff --git a/extension/bot/css/cssbot_combat.cpp b/extension/bot/css/cssbot_combat.cpp
+index d1bee68..80dd2b4 100644
+--- a/extension/bot/css/cssbot_combat.cpp
++++ b/extension/bot/css/cssbot_combat.cpp
+@@ -28,3 +28,8 @@ void CCSSBotCombat::FireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* t
+ 	const bool throughWalls = podbot::PodBot().ShouldShootThrough(cssbot, threat, activeWeapon);
+ 	ICombat::FireWeaponAtEnemy(bot, threat, activeWeapon, bypassLOS || throughWalls);
+ }
++
++float CCSSBotCombat::GetToggleScopeCooldown() const
++{
++	return podbot::PodBot().GetScopeToggleTime(GetBot<CCSSBot>(), ICombat::GetToggleScopeCooldown());
++}
+diff --git a/extension/bot/css/cssbot_combat.h b/extension/bot/css/cssbot_combat.h
+index e5d1805..2d9680e 100644
+--- a/extension/bot/css/cssbot_combat.h
++++ b/extension/bot/css/cssbot_combat.h
+@@ -22,6 +22,8 @@ public:
+ 
+ protected:
+ 	bool CanFireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon) const override;
++	// PODBot snipers check their scope state more often than the default 1 second
++	float GetToggleScopeCooldown() const override;
+ 	// PODBot shoot-through-walls (pb_shootthruwalls)
+ 	void FireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon, const bool bypassLOS = false) override;
+ 
+diff --git a/extension/bot/css/tasks/cssbot_main_task.cpp b/extension/bot/css/tasks/cssbot_main_task.cpp
+index f76f636..6cda1dd 100644
+--- a/extension/bot/css/tasks/cssbot_main_task.cpp
++++ b/extension/bot/css/tasks/cssbot_main_task.cpp
+@@ -42,6 +42,19 @@ TaskEventResponseResult<CCSSBot> CCSSBotMainTask::OnOtherKilled(CCSSBot* bot, CB
+ 	return TryContinue();
+ }
+ 
++QueryAnswerType CCSSBotMainTask::ShouldScopeWithWeapon(CBaseBot* me, const CBotWeapon* activeWeapon, const bool wantstoscope, const bool isscoped)
++{
++	switch (podbot::PodBot().ShouldScope(static_cast<CCSSBot*>(me), activeWeapon, wantstoscope, isscoped))
++	{
++	case podbot::ScopeAnswer::Yes:
++		return ANSWER_YES;
++	case podbot::ScopeAnswer::No:
++		return ANSWER_NO;
++	default:
++		return ANSWER_UNDEFINED;
++	}
++}
++
+ TaskEventResponseResult<CCSSBot> CCSSBotMainTask::OnVoiceCommand(CCSSBot* bot, CBaseEntity* subject, int command)
+ {
+ 	if (command == podbot::kVoiceFollowMe)
+diff --git a/extension/bot/css/tasks/cssbot_main_task.h b/extension/bot/css/tasks/cssbot_main_task.h
+index db81dcc..f7a8f0d 100644
+--- a/extension/bot/css/tasks/cssbot_main_task.h
++++ b/extension/bot/css/tasks/cssbot_main_task.h
+@@ -15,6 +15,8 @@ public:
+ 	TaskEventResponseResult<CCSSBot> OnDebugMoveToCommand(CCSSBot* bot, const Vector& moveTo) override;
+ 	TaskEventResponseResult<CCSSBot> OnKilled(CCSSBot* bot, const CTakeDamageInfo& info) override;
+ 	TaskEventResponseResult<CCSSBot> OnOtherKilled(CCSSBot* bot, CBaseEntity* pVictim, const CTakeDamageInfo& info) override;
++	// PODBot snipers: scope in when camping or fighting, scope out when moving
++	QueryAnswerType ShouldScopeWithWeapon(CBaseBot* me, const CBotWeapon* activeWeapon, const bool wantstoscope, const bool isscoped) override;
+ 	TaskEventResponseResult<CCSSBot> OnVoiceCommand(CCSSBot* bot, CBaseEntity* subject, int command) override;
+ 	TaskEventResponseResult<CCSSBot> OnInjured(CCSSBot* bot, const CTakeDamageInfo& info) override;
+ 	TaskEventResponseResult<CCSSBot> OnSight(CCSSBot* bot, CBaseEntity* subject) override;
+diff --git a/extension/bot/interfaces/combat.cpp b/extension/bot/interfaces/combat.cpp
+index 254f001..3d2ea93 100644
+--- a/extension/bot/interfaces/combat.cpp
++++ b/extension/bot/interfaces/combat.cpp
+@@ -1246,7 +1246,7 @@ void ICombat::UpdateScopeState()
+ {
+ 	if (GetToggleScopeTimer().IsElapsed())
+ 	{
+-		GetToggleScopeTimer().Start(TOGGLE_SCOPE_COOLDOWN_TIME);
++		GetToggleScopeTimer().Start(GetToggleScopeCooldown());
+ 
+ 		CBaseBot* bot = GetBot<CBaseBot>();
+ 		const CBotWeapon* activeWeapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
+diff --git a/extension/bot/interfaces/combat.h b/extension/bot/interfaces/combat.h
+index 35c0350..3a7087e 100644
+--- a/extension/bot/interfaces/combat.h
++++ b/extension/bot/interfaces/combat.h
+@@ -270,6 +270,8 @@ protected:
+ 	IntervalTimer& GetAttackTimer() { return m_attackTimer; }
+ 	// Timer used for toggling between scope/unscoped mode.
+ 	CountdownTimer& GetToggleScopeTimer() { return m_toggleScopeTimer; }
++	// Seconds between checks of the scope state. Mods can make it shorter for bots that should scope in or out faster.
++	virtual float GetToggleScopeCooldown() const { return TOGGLE_SCOPE_COOLDOWN_TIME; }
+ 	// Timer used for special weapon functions
+ 	CountdownTimer& GetSpecialWeaponFunctionTimer() { return m_useSpecialFuncTimer; }
+ 	CountdownTimer& GetWeaponSelectionTimer() { return m_selectWeaponTimer; }
+diff --git a/extension/bot/interfaces/playercontrol.cpp b/extension/bot/interfaces/playercontrol.cpp
+index 3962d4c..9c71e82 100644
+--- a/extension/bot/interfaces/playercontrol.cpp
++++ b/extension/bot/interfaces/playercontrol.cpp
+@@ -236,7 +236,7 @@ void IPlayerController::RunLook()
+ 
+ 	if (m_aimOverride)
+ 	{
+-		aimTarget = m_aimOverride->AdjustTarget(me, m_looktarget, m_lookentity.IsValid());
++		aimTarget = m_aimOverride->AdjustTarget(me, m_looktarget, m_lookentity.Get());
+ 	}
+ 
+ 	auto to = aimTarget - eyepos;
+diff --git a/extension/bot/interfaces/playercontrol.h b/extension/bot/interfaces/playercontrol.h
+index 63b9dbe..de20913 100644
+--- a/extension/bot/interfaces/playercontrol.h
++++ b/extension/bot/interfaces/playercontrol.h
+@@ -16,6 +16,7 @@ struct edict_t;
+ class Vector;
+ class QAngle;
+ class CBaseBot;
++class CBaseEntity;
+ 
+ // Optional hook that replaces how a bot's view is aimed (used by the PODBot layer).
+ class IAimOverride
+@@ -23,7 +24,8 @@ class IAimOverride
+ public:
+ 	virtual ~IAimOverride() = default;
+ 	// Lets the override shift the point being aimed at (for example skill based aim error).
+-	virtual Vector AdjustTarget(CBaseBot* bot, const Vector& target, bool isEntity) = 0;
++	// 'entity' is the entity being looked at, or nullptr when the bot looks at a position.
++	virtual Vector AdjustTarget(CBaseBot* bot, const Vector& target, CBaseEntity* entity) = 0;
+ 	// Writes the new view angles to 'out' and returns true, or returns false to use the default turn.
+ 	// 'priority' is the IPlayerController::LookPriority of the current look request (idle and path looks are low priority).
+ 	virtual bool Turn(CBaseBot* bot, const QAngle& current, const QAngle& desired, bool hasTarget, int priority, float distance, float dt, QAngle& out) = 0;
+diff --git a/extension/bot/interfaces/weapon.cpp b/extension/bot/interfaces/weapon.cpp
+index 9c6dc43..d738c55 100644
+--- a/extension/bot/interfaces/weapon.cpp
++++ b/extension/bot/interfaces/weapon.cpp
+@@ -319,6 +319,16 @@ const int CBotWeapon::GetPriority(const CBaseBot* owner, const CKnownEntity* thr
+ 
+ bool CBotWeapon::IsDeployedOrScoped(const CBaseBot* owner) const
+ {
++	if (s_scopedStateHook)
++	{
++		bool hookScoped = false;
++
++		if (s_scopedStateHook(owner, this, hookScoped))
++		{
++			return hookScoped;
++		}
++	}
++
+ 	const WeaponInfo* info = GetWeaponInfo();
+ 
+ 	if (info->HasDeployedStateProperty())
+diff --git a/extension/bot/interfaces/weapon.h b/extension/bot/interfaces/weapon.h
+index 11be89e..d3553c1 100644
+--- a/extension/bot/interfaces/weapon.h
++++ b/extension/bot/interfaces/weapon.h
+@@ -90,6 +90,10 @@ public:
+ 	const int GetPriority(const CBaseBot* owner, const CKnownEntity* threat = nullptr) const;
+ 	// returns true if the weapon is deployed/scoped.
+ 	virtual bool IsDeployedOrScoped(const CBaseBot* owner) const;
++	// Optional hook that lets a mod decide if a weapon is scoped in or deployed (the PODBot layer uses it for CS:S snipers).
++	// It returns true and sets 'scoped' when it has an answer, false to use the weapon info property as usual.
++	using ScopedStateHook = bool (*)(const CBaseBot* owner, const CBotWeapon* weapon, bool& scoped);
++	static void SetScopedStateHook(ScopedStateHook hook) { s_scopedStateHook = hook; }
+ 	// returns true if the weapon's special function can be used.
+ 	bool CanUseSpecialFunction(const CBaseBot* owner, const float range) const;
+ 	// Weapon debug identifier string
+@@ -108,6 +112,7 @@ protected:
+ 	float GetCustomAmmo(const CBaseBot* owner) const;
+ 
+ private:
++	static inline ScopedStateHook s_scopedStateHook = nullptr;
+ 	CHandle<CBaseEntity> m_handle;
+ 	entities::HBaseCombatWeapon m_bcw;
+ 	int m_econindex;
+diff --git a/extension/podbot/podbot_commands.cpp b/extension/podbot/podbot_commands.cpp
+index ecde88a..1b4bf10 100644
+--- a/extension/podbot/podbot_commands.cpp
++++ b/extension/podbot/podbot_commands.cpp
+@@ -72,3 +72,35 @@ CON_COMMAND(pb, "PODBot-style bot control: pb add|fillserver|reload")
+ 		META_CONPRINT("Unknown pb command.\n");
+ 	}
+ }
++
++// Every pb_* setting of podbot.cfg as a console command: "pb_chat 0" changes it right away, "pb_chat" shows it.
++// The change lasts until the next "pb reload" or map change. Edit podbot.cfg to keep a value.
++#define PODBOT_SETTING_LIST(X) \
++	X(pb_minbots) X(pb_maxbots) X(pb_bot_quota_match) X(pb_bot_join_team) X(pb_skin) X(pb_minbotskill) X(pb_maxbotskill) \
++	X(pb_mapstartbotdelay) X(pb_detailnames) X(pb_chat) X(pb_radio) X(pb_jasonmode) X(pb_restrweapons) X(pb_restrequipammo) \
++	X(pb_autokill) X(pb_autokilldelay) X(pb_dangerfactor) X(pb_maxcamptime) X(pb_use_hints) X(pb_ffa) X(pb_shootthruwalls) \
++	X(pb_numfollowuser) X(pb_followtime) X(pb_crouch_chance) X(pb_debug) X(pb_maxweaponpickup) \
++	X(pb_timer_sound) X(pb_timer_pickup) X(pb_timer_grenade) \
++	X(pb_chat_killed_chance) X(pb_chat_bomb_chance) X(pb_chat_dead_chance) X(pb_chat_reply_chance) X(pb_chat_cooldown) \
++	X(pb_radio_enemydown_chance) X(pb_radio_takingfire_chance) X(pb_radio_enemyspot_chance) X(pb_radio_cooldown) \
++	X(pb_aim_type) X(pb_aim_spring_stiffness_x) X(pb_aim_spring_stiffness_y) X(pb_aim_damper_coefficient_x) X(pb_aim_damper_coefficient_y) \
++	X(pb_aim_deviation_x) X(pb_aim_deviation_y) X(pb_aim_influence_x_on_y) X(pb_aim_influence_y_on_x) X(pb_aim_offset_delay) \
++	X(pb_aim_notarget_slowdown_ratio) X(pb_aim_target_anticipation_ratio) X(pb_aim_damping_scale) X(pb_aim_idle_pitch_scale) \
++	X(pb_aim_idle_pitch_limit) X(pb_aim_pitch_speed_ratio) \
++	X(pb_sniper) X(pb_sniper_camp_time) X(pb_scope_toggle_time) X(pb_awp_headshot_chance)
++
++#define PODBOT_SETTING_COMMAND(name) \
++	CON_COMMAND(name, "PODBot setting " #name ": type a value to change it, or nothing to see it. Edit podbot.cfg to keep it.") \
++	{ \
++		DECLARE_COMMAND_ARGS; \
++		std::string value; \
++		for (int i = 1; i < args.ArgC(); i++) \
++		{ \
++			if (i > 1) { value += ' '; } \
++			value += args[i]; \
++		} \
++		const std::string reply = podbot::PodBot().ConsoleSetting(#name, value, args.ArgC() > 1); \
++		META_CONPRINT(reply.c_str()); \
++	}
++
++PODBOT_SETTING_LIST(PODBOT_SETTING_COMMAND)
+diff --git a/extension/podbot/podbot_manager.cpp b/extension/podbot/podbot_manager.cpp
+index b6c9735..999d3bb 100644
+--- a/extension/podbot/podbot_manager.cpp
++++ b/extension/podbot/podbot_manager.cpp
+@@ -10,6 +10,7 @@
+ #include <extension.h>
+ #include <manager.h>
+ #include <util/helpers.h>
++#include <util/entprops.h>
+ #include <bot/basebot.h>
+ #include <bot/css/cssbot.h>
+ #include <bot/interfaces/profile.h>
+@@ -37,9 +38,9 @@ namespace podbot
+ 			m_maxTurn = m_rng.Float(bracket.minTurn, bracket.maxTurn) * 60.0f;
+ 		}
+ 
+-		Vector AdjustTarget(CBaseBot* bot, const Vector& target, bool isEntity) override
++		Vector AdjustTarget(CBaseBot* bot, const Vector& target, CBaseEntity* entity) override
+ 		{
+-			if (!isEntity)
++			if (entity == nullptr)
+ 			{
+ 				return target;
+ 			}
+@@ -52,7 +53,34 @@ namespace podbot
+ 				m_nextOffsetTime = gpGlobals->curtime + std::max(0.2f, m_params.offsetDelay * 0.5f);
+ 			}
+ 
+-			return target + m_offset;
++			Vector result = target + m_offset;
++
++			// AWP: aim at the body most of the time. A headshot stays possible but rare (pb_awp_headshot_chance).
++			const CBotWeapon* weapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
++
++			if (weapon != nullptr && weapon->GetClassname() == "weapon_awp")
++			{
++				const int index = UtilHelpers::IndexOfEntity(entity);
++
++				if (index != m_awpTarget || gpGlobals->curtime >= m_nextAwpRoll) // decide again for a new target, or every few seconds
++				{
++					m_awpTarget = index;
++					m_nextAwpRoll = gpGlobals->curtime + 4.0f;
++					m_awpHead = m_rng.Int(0, 99) < PodBot().GetAwpHeadChance();
++				}
++
++				if (!m_awpHead)
++				{
++					const float chestHeight = UtilHelpers::getWorldSpaceCenter(entity).z + 6.0f;
++
++					if (result.z > chestHeight)
++					{
++						result.z = chestHeight; // lower the aim point from the head to the chest and keep the lead on x and y
++					}
++				}
++			}
++
++			return result;
+ 		}
+ 
+ 		bool Turn(CBaseBot* bot, const QAngle& current, const QAngle& desired, bool hasTarget, int priority, float distance, float dt, QAngle& out) override
+@@ -92,9 +120,17 @@ namespace podbot
+ 		float m_maxTurn = 0.0f;
+ 		float m_nextOffsetTime = 0.0f;
+ 		float m_nextDebugDraw = 0.0f;
++		int m_awpTarget = -1;
++		float m_nextAwpRoll = 0.0f;
++		bool m_awpHead = false;
+ 		Vector m_offset = Vector(0.0f, 0.0f, 0.0f);
+ 	};
+ 
++	static bool PodScopedStateHook(const CBaseBot* owner, const CBotWeapon* weapon, bool& scoped)
++	{
++		return PodBot().GetScopedState(owner, weapon, scoped);
++	}
++
+ 	static std::string ConfigPath(const char* file)
+ 	{
+ 		char path[PLATFORM_MAX_PATH]{};
+@@ -120,6 +156,7 @@ namespace podbot
+ 
+ 		m_loaded = true;
+ 		m_debug = ParseDebugFlags(m_settings.GetString("pb_debug", "off"));
++		CBotWeapon::SetScopedStateHook(&PodScopedStateHook);
+ 
+ 		for (auto& entry : m_info)
+ 		{
+@@ -1134,6 +1171,120 @@ namespace podbot
+ 		}
+ 	}
+ 
++	static bool IsSniperWeapon(const CBotWeapon* weapon)
++	{
++		const std::string& name = weapon->GetClassname();
++		return name == "weapon_awp" || name == "weapon_scout" || name == "weapon_sg550" || name == "weapon_g3sg1";
++	}
++
++	// The scope state comes from the player's field of view: it is smaller than the default while a sniper rifle is zoomed.
++	bool CPodBotManager::GetScopedState(const CBaseBot* owner, const CBotWeapon* weapon, bool& scoped)
++	{
++		if (!m_loaded || weapon == nullptr || !m_settings.GetBool("pb_sniper", true) || m_info.count(owner) == 0 || !IsSniperWeapon(weapon))
++		{
++			return false;
++		}
++
++		int fov = 0;
++		int defaultFov = 0;
++
++		if (!entprops->GetEntProp(owner->GetEntity(), Prop_Send, "m_iFOV", fov))
++		{
++			return false; // property not found: keep NavBot's own check
++		}
++
++		if (!entprops->GetEntProp(owner->GetEntity(), Prop_Send, "m_iDefaultFOV", defaultFov) || defaultFov <= 0)
++		{
++			defaultFov = 90;
++		}
++
++		scoped = fov != 0 && fov < defaultFov;
++		return true;
++	}
++
++	ScopeAnswer CPodBotManager::ShouldScope(CCSSBot* bot, const CBotWeapon* weapon, bool wantsToScope, bool isScoped)
++	{
++		BotInfo* info = Find(bot);
++
++		if (!m_loaded || info == nullptr || weapon == nullptr || !m_settings.GetBool("pb_sniper", true) || !IsSniperWeapon(weapon))
++		{
++			return ScopeAnswer::Undefined;
++		}
++
++		const float now = gpGlobals->curtime;
++		const float speed = bot->GetAbsVelocity().Length2D();
++
++		if (speed > 20.0f)
++		{
++			info->stillSince = 0.0f;
++		}
++		else if (info->stillSince == 0.0f)
++		{
++			info->stillSince = now;
++		}
++
++		const bool camping = info->stillSince > 0.0f && now - info->stillSince >= m_settings.GetFloat("pb_sniper_camp_time", 1.5f);
++		const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
++		const bool engaged = threat != nullptr && (threat->IsVisibleNow() || threat->GetTimeSinceLastVisible() < 2.0f);
++		ScopeAnswer answer;
++
++		if (engaged)
++		{
++			// an enemy is around: scope in when the combat code wants it (it knows the range), so the shot comes after the scope
++			answer = wantsToScope ? ScopeAnswer::Yes : ScopeAnswer::Undefined;
++		}
++		else
++		{
++			// nobody to shoot at: scoped while camping, scoped out while moving
++			answer = camping ? ScopeAnswer::Yes : ScopeAnswer::No;
++		}
++
++		if (answer != static_cast<ScopeAnswer>(info->lastScopeAnswer) || now >= info->nextScopeLog) // log changes, and a reminder every 2 seconds
++		{
++			info->lastScopeAnswer = static_cast<int>(answer);
++			info->nextScopeLog = now + 2.0f;
++			DebugLog(bot, "sniper %s: scoped %d, combat wants scope %d, enemy %d, camping %d, speed %.0f -> %s", weapon->GetClassname().c_str(), isScoped, wantsToScope,
++				engaged, camping, speed, answer == ScopeAnswer::Yes ? "SCOPE IN" : (answer == ScopeAnswer::No ? "SCOPE OUT" : "let combat decide"));
++		}
++
++		return answer;
++	}
++
++	float CPodBotManager::GetScopeToggleTime(CCSSBot* bot, float defaultTime)
++	{
++		if (!m_loaded || Find(bot) == nullptr || !m_settings.GetBool("pb_sniper", true))
++		{
++			return defaultTime;
++		}
++
++		return std::max(0.1f, m_settings.GetFloat("pb_scope_toggle_time", 0.4f));
++	}
++
++	std::string CPodBotManager::ConsoleSetting(const std::string& name, const std::string& value, bool hasValue)
++	{
++		if (!hasValue)
++		{
++			return m_settings.Has(name) ? "\"" + name + "\" = \"" + m_settings.GetString(name) + "\"\n" : "\"" + name + "\" is not in podbot.cfg: the built-in default is used\n";
++		}
++
++		m_settings.Set(name, value);
++
++		if (name == "pb_debug")
++		{
++			m_debug = ParseDebugFlags(value);
++		}
++
++		if (name.rfind("pb_aim_", 0) == 0 || name == "pb_sniper" || name == "pb_minbotskill" || name == "pb_maxbotskill")
++		{
++			for (auto& entry : m_info)
++			{
++				entry.second.profilePtr = nullptr; // bots pick up the new aim and skill values within a second
++			}
++		}
++
++		return "\"" + name + "\" changed to \"" + value + "\" (until the next pb reload or map change: edit podbot.cfg to keep it)\n";
++	}
++
+ 	bool CPodBotManager::IsFreeForAll(CCSSBot* bot)
+ 	{
+ 		return m_loaded && m_settings.GetBool("pb_ffa", false) && Find(bot) != nullptr;
+diff --git a/extension/podbot/podbot_manager.h b/extension/podbot/podbot_manager.h
+index 1a75aa2..aeaca4c 100644
+--- a/extension/podbot/podbot_manager.h
++++ b/extension/podbot/podbot_manager.h
+@@ -21,6 +21,9 @@ namespace podbot
+ 	// Voice command id the manager sends to bots that must follow a player (see CCSSBotMainTask::OnVoiceCommand)
+ 	constexpr int kVoiceFollowMe = 0x50420001;
+ 
++	// Answer of the sniper scope policy (maps to NavBot's yes / no / undefined decision answers).
++	enum class ScopeAnswer { Undefined, Yes, No };
++
+ 	// PODBot-style layer for the Counter-Strike: Source bot (skills, personalities, names, chat).
+ 	// Buy decisions for one PODBot-managed bot (weapon lists are best first).
+ 	struct BuyPlan
+@@ -95,6 +98,17 @@ namespace podbot
+ 		bool DebugWants(const CBaseBot* bot, unsigned flag) const;
+ 		void DebugLog(const CBaseBot* bot, const char* fmt, ...) const;
+ 
++		// Snipers (AWP, Scout, SG550, G3SG1): scoped state read from the player's FOV, scope in when camping or fighting,
++		// scope out while moving, check the scope more often. pb_sniper 0 turns all of this off.
++		ScopeAnswer ShouldScope(CCSSBot* bot, const CBotWeapon* weapon, bool wantsToScope, bool isScoped);
++		bool GetScopedState(const CBaseBot* owner, const CBotWeapon* weapon, bool& scoped);
++		float GetScopeToggleTime(CCSSBot* bot, float defaultTime);
++		int GetAwpHeadChance() const { return m_settings.GetInt("pb_awp_headshot_chance", 20); }
++
++		// A "pb_xxx value" typed in the console: changes the setting until the next reload (edit podbot.cfg to keep it).
++		// With no value it shows the current one. Returns the text to print.
++		std::string ConsoleSetting(const std::string& name, const std::string& value, bool hasValue);
++
+ 		// Chat events
+ 		void OnOtherKilled(CCSSBot* bot, CBaseEntity* victim, CBaseEntity* attacker);
+ 		void OnBombPlanted(CCSSBot* bot);
+@@ -104,7 +118,7 @@ namespace podbot
+ 		void OnSight(CCSSBot* bot, CBaseEntity* subject);
+ 
+ 	private:
+-		struct BotInfo { float nextCrouchRoll = 0.0f; bool crouching = false; int followClient = 0; float followUntil = 0.0f; float nextWallbangRoll = 0.0f; bool wallbang = false; const void* profilePtr = nullptr; int desiredTeam = 0; int desiredClass = 0; int teamAttempts = 0; float nextTeamAttempt = 0.0f; int skill = 100; Personality personality = Personality::Normal; float nextChatTime = 0.0f; float nextDeadChat = 0.0f; float nextRadio = 0.0f; };
++		struct BotInfo { int lastScopeAnswer = -1; float nextScopeLog = 0.0f; float stillSince = 0.0f; float nextCrouchRoll = 0.0f; bool crouching = false; int followClient = 0; float followUntil = 0.0f; float nextWallbangRoll = 0.0f; bool wallbang = false; const void* profilePtr = nullptr; int desiredTeam = 0; int desiredClass = 0; int teamAttempts = 0; float nextTeamAttempt = 0.0f; int skill = 100; Personality personality = Personality::Normal; float nextChatTime = 0.0f; float nextDeadChat = 0.0f; float nextRadio = 0.0f; };
+ 		struct PendingSay { const CBaseBot* bot; float time; std::string msg; };
+ 
+ 		const void* ApplyProfile(CBaseBot* bot, int skill, Personality p); // returns the profile that was set

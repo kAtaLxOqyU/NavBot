@@ -42,6 +42,19 @@ TaskEventResponseResult<CCSSBot> CCSSBotMainTask::OnOtherKilled(CCSSBot* bot, CB
 	return TryContinue();
 }
 
+QueryAnswerType CCSSBotMainTask::ShouldScopeWithWeapon(CBaseBot* me, const CBotWeapon* activeWeapon, const bool wantstoscope, const bool isscoped)
+{
+	switch (podbot::PodBot().ShouldScope(static_cast<CCSSBot*>(me), activeWeapon, wantstoscope, isscoped))
+	{
+	case podbot::ScopeAnswer::Yes:
+		return ANSWER_YES;
+	case podbot::ScopeAnswer::No:
+		return ANSWER_NO;
+	default:
+		return ANSWER_UNDEFINED;
+	}
+}
+
 TaskEventResponseResult<CCSSBot> CCSSBotMainTask::OnVoiceCommand(CCSSBot* bot, CBaseEntity* subject, int command)
 {
 	if (command == podbot::kVoiceFollowMe)

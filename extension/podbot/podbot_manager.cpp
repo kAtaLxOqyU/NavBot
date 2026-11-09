@@ -10,6 +10,7 @@
 #include <extension.h>
 #include <manager.h>
 #include <util/helpers.h>
+#include <util/entprops.h>
 #include <bot/basebot.h>
 #include <bot/css/cssbot.h>
 #include <bot/interfaces/profile.h>
@@ -37,9 +38,9 @@ namespace podbot
 			m_maxTurn = m_rng.Float(bracket.minTurn, bracket.maxTurn) * 60.0f;
 		}
 
-		Vector AdjustTarget(CBaseBot* bot, const Vector& target, bool isEntity) override
+		Vector AdjustTarget(CBaseBot* bot, const Vector& target, CBaseEntity* entity) override
 		{
-			if (!isEntity)
+			if (entity == nullptr)
 			{
 				return target;
 			}
@@ -52,7 +53,34 @@ namespace podbot
 				m_nextOffsetTime = gpGlobals->curtime + std::max(0.2f, m_params.offsetDelay * 0.5f);
 			}
 
-			return target + m_offset;
+			Vector result = target + m_offset;
+
+			// AWP: aim at the body most of the time. A headshot stays possible but rare (pb_awp_headshot_chance).
+			const CBotWeapon* weapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
+
+			if (weapon != nullptr && weapon->GetClassname() == "weapon_awp")
+			{
+				const int index = UtilHelpers::IndexOfEntity(entity);
+
+				if (index != m_awpTarget || gpGlobals->curtime >= m_nextAwpRoll) // decide again for a new target, or every few seconds
+				{
+					m_awpTarget = index;
+					m_nextAwpRoll = gpGlobals->curtime + 4.0f;
+					m_awpHead = m_rng.Int(0, 99) < PodBot().GetAwpHeadChance();
+				}
+
+				if (!m_awpHead)
+				{
+					const float chestHeight = UtilHelpers::getWorldSpaceCenter(entity).z + 6.0f;
+
+					if (result.z > chestHeight)
+					{
+						result.z = chestHeight; // lower the aim point from the head to the chest and keep the lead on x and y
+					}
+				}
+			}
+
+			return result;
 		}
 
 		bool Turn(CBaseBot* bot, const QAngle& current, const QAngle& desired, bool hasTarget, int priority, float distance, float dt, QAngle& out) override
@@ -92,8 +120,16 @@ namespace podbot
 		float m_maxTurn = 0.0f;
 		float m_nextOffsetTime = 0.0f;
 		float m_nextDebugDraw = 0.0f;
+		int m_awpTarget = -1;
+		float m_nextAwpRoll = 0.0f;
+		bool m_awpHead = false;
 		Vector m_offset = Vector(0.0f, 0.0f, 0.0f);
 	};
+
+	static bool PodScopedStateHook(const CBaseBot* owner, const CBotWeapon* weapon, bool& scoped)
+	{
+		return PodBot().GetScopedState(owner, weapon, scoped);
+	}
 
 	static std::string ConfigPath(const char* file)
 	{
@@ -120,6 +156,7 @@ namespace podbot
 
 		m_loaded = true;
 		m_debug = ParseDebugFlags(m_settings.GetString("pb_debug", "off"));
+		CBotWeapon::SetScopedStateHook(&PodScopedStateHook);
 
 		for (auto& entry : m_info)
 		{
@@ -1132,6 +1169,120 @@ namespace podbot
 
 			following++;
 		}
+	}
+
+	static bool IsSniperWeapon(const CBotWeapon* weapon)
+	{
+		const std::string& name = weapon->GetClassname();
+		return name == "weapon_awp" || name == "weapon_scout" || name == "weapon_sg550" || name == "weapon_g3sg1";
+	}
+
+	// The scope state comes from the player's field of view: it is smaller than the default while a sniper rifle is zoomed.
+	bool CPodBotManager::GetScopedState(const CBaseBot* owner, const CBotWeapon* weapon, bool& scoped)
+	{
+		if (!m_loaded || weapon == nullptr || !m_settings.GetBool("pb_sniper", true) || m_info.count(owner) == 0 || !IsSniperWeapon(weapon))
+		{
+			return false;
+		}
+
+		int fov = 0;
+		int defaultFov = 0;
+
+		if (!entprops->GetEntProp(owner->GetEntity(), Prop_Send, "m_iFOV", fov))
+		{
+			return false; // property not found: keep NavBot's own check
+		}
+
+		if (!entprops->GetEntProp(owner->GetEntity(), Prop_Send, "m_iDefaultFOV", defaultFov) || defaultFov <= 0)
+		{
+			defaultFov = 90;
+		}
+
+		scoped = fov != 0 && fov < defaultFov;
+		return true;
+	}
+
+	ScopeAnswer CPodBotManager::ShouldScope(CCSSBot* bot, const CBotWeapon* weapon, bool wantsToScope, bool isScoped)
+	{
+		BotInfo* info = Find(bot);
+
+		if (!m_loaded || info == nullptr || weapon == nullptr || !m_settings.GetBool("pb_sniper", true) || !IsSniperWeapon(weapon))
+		{
+			return ScopeAnswer::Undefined;
+		}
+
+		const float now = gpGlobals->curtime;
+		const float speed = bot->GetAbsVelocity().Length2D();
+
+		if (speed > 20.0f)
+		{
+			info->stillSince = 0.0f;
+		}
+		else if (info->stillSince == 0.0f)
+		{
+			info->stillSince = now;
+		}
+
+		const bool camping = info->stillSince > 0.0f && now - info->stillSince >= m_settings.GetFloat("pb_sniper_camp_time", 1.5f);
+		const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+		const bool engaged = threat != nullptr && (threat->IsVisibleNow() || threat->GetTimeSinceLastVisible() < 2.0f);
+		ScopeAnswer answer;
+
+		if (engaged)
+		{
+			// an enemy is around: scope in when the combat code wants it (it knows the range), so the shot comes after the scope
+			answer = wantsToScope ? ScopeAnswer::Yes : ScopeAnswer::Undefined;
+		}
+		else
+		{
+			// nobody to shoot at: scoped while camping, scoped out while moving
+			answer = camping ? ScopeAnswer::Yes : ScopeAnswer::No;
+		}
+
+		if (answer != static_cast<ScopeAnswer>(info->lastScopeAnswer) || now >= info->nextScopeLog) // log changes, and a reminder every 2 seconds
+		{
+			info->lastScopeAnswer = static_cast<int>(answer);
+			info->nextScopeLog = now + 2.0f;
+			DebugLog(bot, "sniper %s: scoped %d, combat wants scope %d, enemy %d, camping %d, speed %.0f -> %s", weapon->GetClassname().c_str(), isScoped, wantsToScope,
+				engaged, camping, speed, answer == ScopeAnswer::Yes ? "SCOPE IN" : (answer == ScopeAnswer::No ? "SCOPE OUT" : "let combat decide"));
+		}
+
+		return answer;
+	}
+
+	float CPodBotManager::GetScopeToggleTime(CCSSBot* bot, float defaultTime)
+	{
+		if (!m_loaded || Find(bot) == nullptr || !m_settings.GetBool("pb_sniper", true))
+		{
+			return defaultTime;
+		}
+
+		return std::max(0.1f, m_settings.GetFloat("pb_scope_toggle_time", 0.4f));
+	}
+
+	std::string CPodBotManager::ConsoleSetting(const std::string& name, const std::string& value, bool hasValue)
+	{
+		if (!hasValue)
+		{
+			return m_settings.Has(name) ? "\"" + name + "\" = \"" + m_settings.GetString(name) + "\"\n" : "\"" + name + "\" is not in podbot.cfg: the built-in default is used\n";
+		}
+
+		m_settings.Set(name, value);
+
+		if (name == "pb_debug")
+		{
+			m_debug = ParseDebugFlags(value);
+		}
+
+		if (name.rfind("pb_aim_", 0) == 0 || name == "pb_sniper" || name == "pb_minbotskill" || name == "pb_maxbotskill")
+		{
+			for (auto& entry : m_info)
+			{
+				entry.second.profilePtr = nullptr; // bots pick up the new aim and skill values within a second
+			}
+		}
+
+		return "\"" + name + "\" changed to \"" + value + "\" (until the next pb reload or map change: edit podbot.cfg to keep it)\n";
 	}
 
 	bool CPodBotManager::IsFreeForAll(CCSSBot* bot)

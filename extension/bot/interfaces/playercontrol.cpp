@@ -236,7 +236,7 @@ void IPlayerController::RunLook()
 
 	if (m_aimOverride)
 	{
-		aimTarget = m_aimOverride->AdjustTarget(me, m_looktarget, m_lookentity.IsValid());
+		aimTarget = m_aimOverride->AdjustTarget(me, m_looktarget, m_lookentity.Get());
 	}
 
 	auto to = aimTarget - eyepos;

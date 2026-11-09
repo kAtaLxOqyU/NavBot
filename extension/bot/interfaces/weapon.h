@@ -90,6 +90,10 @@ public:
 	const int GetPriority(const CBaseBot* owner, const CKnownEntity* threat = nullptr) const;
 	// returns true if the weapon is deployed/scoped.
 	virtual bool IsDeployedOrScoped(const CBaseBot* owner) const;
+	// Optional hook that lets a mod decide if a weapon is scoped in or deployed (the PODBot layer uses it for CS:S snipers).
+	// It returns true and sets 'scoped' when it has an answer, false to use the weapon info property as usual.
+	using ScopedStateHook = bool (*)(const CBaseBot* owner, const CBotWeapon* weapon, bool& scoped);
+	static void SetScopedStateHook(ScopedStateHook hook) { s_scopedStateHook = hook; }
 	// returns true if the weapon's special function can be used.
 	bool CanUseSpecialFunction(const CBaseBot* owner, const float range) const;
 	// Weapon debug identifier string
@@ -108,6 +112,7 @@ protected:
 	float GetCustomAmmo(const CBaseBot* owner) const;
 
 private:
+	static inline ScopedStateHook s_scopedStateHook = nullptr;
 	CHandle<CBaseEntity> m_handle;
 	entities::HBaseCombatWeapon m_bcw;
 	int m_econindex;

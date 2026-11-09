@@ -319,6 +319,16 @@ const int CBotWeapon::GetPriority(const CBaseBot* owner, const CKnownEntity* thr
 
 bool CBotWeapon::IsDeployedOrScoped(const CBaseBot* owner) const
 {
+	if (s_scopedStateHook)
+	{
+		bool hookScoped = false;
+
+		if (s_scopedStateHook(owner, this, hookScoped))
+		{
+			return hookScoped;
+		}
+	}
+
 	const WeaponInfo* info = GetWeaponInfo();
 
 	if (info->HasDeployedStateProperty())

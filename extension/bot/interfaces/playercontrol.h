@@ -16,6 +16,7 @@ struct edict_t;
 class Vector;
 class QAngle;
 class CBaseBot;
+class CBaseEntity;
 
 // Optional hook that replaces how a bot's view is aimed (used by the PODBot layer).
 class IAimOverride
@@ -23,7 +24,8 @@ class IAimOverride
 public:
 	virtual ~IAimOverride() = default;
 	// Lets the override shift the point being aimed at (for example skill based aim error).
-	virtual Vector AdjustTarget(CBaseBot* bot, const Vector& target, bool isEntity) = 0;
+	// 'entity' is the entity being looked at, or nullptr when the bot looks at a position.
+	virtual Vector AdjustTarget(CBaseBot* bot, const Vector& target, CBaseEntity* entity) = 0;
 	// Writes the new view angles to 'out' and returns true, or returns false to use the default turn.
 	// 'priority' is the IPlayerController::LookPriority of the current look request (idle and path looks are low priority).
 	virtual bool Turn(CBaseBot* bot, const QAngle& current, const QAngle& desired, bool hasTarget, int priority, float distance, float dt, QAngle& out) = 0;

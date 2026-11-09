@@ -28,3 +28,8 @@ void CCSSBotCombat::FireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* t
 	const bool throughWalls = podbot::PodBot().ShouldShootThrough(cssbot, threat, activeWeapon);
 	ICombat::FireWeaponAtEnemy(bot, threat, activeWeapon, bypassLOS || throughWalls);
 }
+
+float CCSSBotCombat::GetToggleScopeCooldown() const
+{
+	return podbot::PodBot().GetScopeToggleTime(GetBot<CCSSBot>(), ICombat::GetToggleScopeCooldown());
+}

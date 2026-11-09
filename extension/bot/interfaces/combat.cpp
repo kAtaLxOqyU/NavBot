@@ -1246,7 +1246,7 @@ void ICombat::UpdateScopeState()
 {
 	if (GetToggleScopeTimer().IsElapsed())
 	{
-		GetToggleScopeTimer().Start(TOGGLE_SCOPE_COOLDOWN_TIME);
+		GetToggleScopeTimer().Start(GetToggleScopeCooldown());
 
 		CBaseBot* bot = GetBot<CBaseBot>();
 		const CBotWeapon* activeWeapon = bot->GetInventoryInterface()->GetActiveBotWeapon();

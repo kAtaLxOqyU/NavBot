@@ -15,6 +15,8 @@ public:
 	TaskEventResponseResult<CCSSBot> OnDebugMoveToCommand(CCSSBot* bot, const Vector& moveTo) override;
 	TaskEventResponseResult<CCSSBot> OnKilled(CCSSBot* bot, const CTakeDamageInfo& info) override;
 	TaskEventResponseResult<CCSSBot> OnOtherKilled(CCSSBot* bot, CBaseEntity* pVictim, const CTakeDamageInfo& info) override;
+	// PODBot snipers: scope in when camping or fighting, scope out when moving
+	QueryAnswerType ShouldScopeWithWeapon(CBaseBot* me, const CBotWeapon* activeWeapon, const bool wantstoscope, const bool isscoped) override;
 	TaskEventResponseResult<CCSSBot> OnVoiceCommand(CCSSBot* bot, CBaseEntity* subject, int command) override;
 	TaskEventResponseResult<CCSSBot> OnInjured(CCSSBot* bot, const CTakeDamageInfo& info) override;
 	TaskEventResponseResult<CCSSBot> OnSight(CCSSBot* bot, CBaseEntity* subject) override;
