@@ -87,7 +87,8 @@ CON_COMMAND(pb, "PODBot-style bot control: pb add|fillserver|reload")
 	X(pb_aim_deviation_x) X(pb_aim_deviation_y) X(pb_aim_influence_x_on_y) X(pb_aim_influence_y_on_x) X(pb_aim_offset_delay) \
 	X(pb_aim_notarget_slowdown_ratio) X(pb_aim_target_anticipation_ratio) X(pb_aim_damping_scale) X(pb_aim_idle_pitch_scale) \
 	X(pb_aim_idle_pitch_limit) X(pb_aim_pitch_speed_ratio) \
-	X(pb_sniper) X(pb_sniper_camp_time) X(pb_scope_toggle_time) X(pb_awp_headshot_chance)
+	X(pb_sniper) X(pb_sniper_camp_time) X(pb_scope_toggle_time) X(pb_awp_headshot_chance) \
+	X(pb_unstuck) X(pb_unstuck_time)
 
 #define PODBOT_SETTING_COMMAND(name) \
 	CON_COMMAND(name, "PODBot setting " #name ": type a value to change it, or nothing to see it. Edit podbot.cfg to keep it.") \

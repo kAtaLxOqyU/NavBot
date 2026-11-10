@@ -109,6 +109,10 @@ namespace podbot
 		// With no value it shows the current one. Returns the text to print.
 		std::string ConsoleSetting(const std::string& name, const std::string& value, bool hasValue);
 
+		// Called every server frame (cheap, does its own timing): pb_unstuck. A bot that keeps pushing against something
+		// for pb_unstuck_time seconds (1.5) without getting anywhere jumps and keeps moving the same way.
+		void Frame();
+
 		// Chat events
 		void OnOtherKilled(CCSSBot* bot, CBaseEntity* victim, CBaseEntity* attacker);
 		void OnBombPlanted(CCSSBot* bot);
@@ -118,7 +122,7 @@ namespace podbot
 		void OnSight(CCSSBot* bot, CBaseEntity* subject);
 
 	private:
-		struct BotInfo { int lastScopeAnswer = -1; float nextScopeLog = 0.0f; float stillSince = 0.0f; float nextCrouchRoll = 0.0f; bool crouching = false; int followClient = 0; float followUntil = 0.0f; float nextWallbangRoll = 0.0f; bool wallbang = false; const void* profilePtr = nullptr; int desiredTeam = 0; int desiredClass = 0; int teamAttempts = 0; float nextTeamAttempt = 0.0f; int skill = 100; Personality personality = Personality::Normal; float nextChatTime = 0.0f; float nextDeadChat = 0.0f; float nextRadio = 0.0f; };
+		struct BotInfo { float stuckSince = 0.0f; float stuckAnchor[3] = { 0.0f, 0.0f, 0.0f }; int stuckAttempts = 0; int lastScopeAnswer = -1; float nextScopeLog = 0.0f; float stillSince = 0.0f; float nextCrouchRoll = 0.0f; bool crouching = false; int followClient = 0; float followUntil = 0.0f; float nextWallbangRoll = 0.0f; bool wallbang = false; const void* profilePtr = nullptr; int desiredTeam = 0; int desiredClass = 0; int teamAttempts = 0; float nextTeamAttempt = 0.0f; int skill = 100; Personality personality = Personality::Normal; float nextChatTime = 0.0f; float nextDeadChat = 0.0f; float nextRadio = 0.0f; };
 		struct PendingSay { const CBaseBot* bot; float time; std::string msg; };
 
 		const void* ApplyProfile(CBaseBot* bot, int skill, Personality p); // returns the profile that was set
@@ -135,6 +139,8 @@ namespace podbot
 		void CountPlayers(int& humans, int& bots) const;
 		bool NameInUse(const std::string& name) const;
 		void UpdateAutoKill(float now);
+		void UpdateObstacles(float now);
+		float m_nextObstacleCheck = 0.0f;
 		void UpdateTeams(float now);
 		float m_humansDeadSince = 0.0f;
 

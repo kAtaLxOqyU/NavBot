@@ -1,0 +1,213 @@
+diff --git a/configs/podbot/podbot.cfg b/configs/podbot/podbot.cfg
+index afbf190..534524c 100644
+--- a/configs/podbot/podbot.cfg
++++ b/configs/podbot/podbot.cfg
+@@ -52,6 +52,12 @@ pb_sniper_camp_time 1.5
+ pb_scope_toggle_time 0.4
+ pb_awp_headshot_chance 20
+ 
++# CS:S edition anti-stuck: a bot that keeps pushing against an obstacle (it holds a move key but does not get
++# anywhere) for pb_unstuck_time seconds jumps and keeps moving the same way. It alternates a plain jump and a crouch
++# jump, and tries again after another pb_unstuck_time seconds. pb_unstuck 0 turns it off.
++pb_unstuck 1
++pb_unstuck_time 1.5
++
+ # 0 none, 1 [POD] prefix + (skill), 2 prefix only, 3 (skill) only
+ pb_detailnames 1
+ 
+diff --git a/extension/mods/css/css_mod.cpp b/extension/mods/css/css_mod.cpp
+index e0c7150..21debc6 100644
+--- a/extension/mods/css/css_mod.cpp
++++ b/extension/mods/css/css_mod.cpp
+@@ -166,6 +166,12 @@ void CCounterStrikeSourceMod::OnClientCommand(edict_t* pEdict, SourceMod::IGameP
+ 	}
+ }
+ 
++void CCounterStrikeSourceMod::Frame()
++{
++	CBaseMod::Frame();
++	podbot::PodBot().Frame();
++}
++
+ void CCounterStrikeSourceMod::Update()
+ {
+ 	CBaseMod::Update();
+diff --git a/extension/mods/css/css_mod.h b/extension/mods/css/css_mod.h
+index c7f0939..6beeabd 100644
+--- a/extension/mods/css/css_mod.h
++++ b/extension/mods/css/css_mod.h
+@@ -48,6 +48,7 @@ public:
+ 	CBaseBot* AllocateBot(edict_t* edict) override;
+ 	void OnRoundStart() override;
+ 	void OnMapStart() override;
++	void Frame() override;
+ 	void OnMapEnd() override;
+ 	void OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CConCommandArgs& args) override;
+ 	void Update() override;
+diff --git a/extension/podbot/podbot_commands.cpp b/extension/podbot/podbot_commands.cpp
+index 1b4bf10..12b677f 100644
+--- a/extension/podbot/podbot_commands.cpp
++++ b/extension/podbot/podbot_commands.cpp
+@@ -87,7 +87,8 @@ CON_COMMAND(pb, "PODBot-style bot control: pb add|fillserver|reload")
+ 	X(pb_aim_deviation_x) X(pb_aim_deviation_y) X(pb_aim_influence_x_on_y) X(pb_aim_influence_y_on_x) X(pb_aim_offset_delay) \
+ 	X(pb_aim_notarget_slowdown_ratio) X(pb_aim_target_anticipation_ratio) X(pb_aim_damping_scale) X(pb_aim_idle_pitch_scale) \
+ 	X(pb_aim_idle_pitch_limit) X(pb_aim_pitch_speed_ratio) \
+-	X(pb_sniper) X(pb_sniper_camp_time) X(pb_scope_toggle_time) X(pb_awp_headshot_chance)
++	X(pb_sniper) X(pb_sniper_camp_time) X(pb_scope_toggle_time) X(pb_awp_headshot_chance) \
++	X(pb_unstuck) X(pb_unstuck_time)
+ 
+ #define PODBOT_SETTING_COMMAND(name) \
+ 	CON_COMMAND(name, "PODBot setting " #name ": type a value to change it, or nothing to see it. Edit podbot.cfg to keep it.") \
+diff --git a/extension/podbot/podbot_manager.cpp b/extension/podbot/podbot_manager.cpp
+index 999d3bb..d3bdc27 100644
+--- a/extension/podbot/podbot_manager.cpp
++++ b/extension/podbot/podbot_manager.cpp
+@@ -11,6 +11,9 @@
+ #include <manager.h>
+ #include <util/helpers.h>
+ #include <util/entprops.h>
++#include <util/gamedata_const.h>
++#include <bot/interfaces/movement.h>
++#include <mods/css/css_lib.h>
+ #include <bot/basebot.h>
+ #include <bot/css/cssbot.h>
+ #include <bot/interfaces/profile.h>
+@@ -889,6 +892,105 @@ namespace podbot
+ 		m_pending.push_back({ bot, now + typing, reply });
+ 	}
+ 
++	void CPodBotManager::Frame()
++	{
++		const float now = gpGlobals->curtime;
++
++		if (!m_loaded || now < m_nextObstacleCheck)
++		{
++			return;
++		}
++
++		m_nextObstacleCheck = now + 0.1f; // ten checks a second are plenty for a 1.5 second rule
++		UpdateObstacles(now);
++	}
++
++	// A bot that presses a move key but stays put for pb_unstuck_time seconds is pushing against something: jump and
++	// keep moving the same way. The direction is whatever move keys the bot was holding, so it works for any obstacle.
++	void CPodBotManager::UpdateObstacles(float now)
++	{
++		if (!m_settings.GetBool("pb_unstuck", true))
++		{
++			return;
++		}
++
++		const float window = std::max(0.5f, m_settings.GetFloat("pb_unstuck_time", 1.5f));
++		const auto& keys = GamedataConstants::s_user_buttons;
++		const int moveKeys = keys.forward | keys.backward | keys.moveleft | keys.moveright;
++
++		auto check = [this, now, window, &keys, moveKeys](CBaseBot* b)
++		{
++			BotInfo* info = Find(b);
++
++			if (info == nullptr)
++			{
++				return;
++			}
++
++			CCSSBot* bot = static_cast<CCSSBot*>(b);
++			IMovement* movement = bot->GetMovementInterface();
++
++			// nothing to do while dead, frozen, on a ladder, already jumping, breaking an obstacle, or fighting
++			if (!bot->IsAlive() || csslib::IsInFreezeTime() || movement->IsOnLadder() || movement->IsUsingLadder() || movement->IsClimbingOrJumping() || movement->NeedsWeaponControl())
++			{
++				info->stuckSince = 0.0f;
++				return;
++			}
++
++			const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
++			const int buttons = bot->GetControlInterface()->GetOldButtonsToSend();
++
++			if ((buttons & moveKeys) == 0 || (threat != nullptr && threat->IsVisibleNow()))
++			{
++				info->stuckSince = 0.0f; // not trying to go anywhere, or the combat code is moving the bot
++				return;
++			}
++
++			const Vector position = bot->GetAbsOrigin();
++			const Vector anchor(info->stuckAnchor[0], info->stuckAnchor[1], info->stuckAnchor[2]);
++
++			if (info->stuckSince == 0.0f || (position - anchor).Length2D() > 24.0f)
++			{
++				// moving normally: start a new window from here
++				info->stuckAnchor[0] = position.x;
++				info->stuckAnchor[1] = position.y;
++				info->stuckAnchor[2] = position.z;
++				info->stuckSince = now;
++				info->stuckAttempts = 0;
++				return;
++			}
++
++			if (now - info->stuckSince < window)
++			{
++				return;
++			}
++
++			// pushed against something for the whole window without moving 24 units
++			info->stuckSince = now; // the next try comes after another window
++			info->stuckAttempts++;
++			const bool crouchJump = (info->stuckAttempts % 2) == 0; // alternate: a plain jump, then a crouch jump for higher edges
++
++			if (crouchJump)
++			{
++				movement->CrouchJump();
++			}
++			else
++			{
++				movement->Jump();
++			}
++
++			IPlayerController* control = bot->GetControlInterface();
++
++			if (buttons & keys.forward) { control->PressForwardButton(0.5f); }
++			if (buttons & keys.backward) { control->PressBackwardsButton(0.5f); }
++			if (buttons & keys.moveleft) { control->PressMoveLeftButton(0.5f); }
++			if (buttons & keys.moveright) { control->PressMoveRightButton(0.5f); }
++
++			DebugLog(bot, "stuck for %.1f s at %.0f %.0f %.0f: %s and keep moving (try %d)", window, position.x, position.y, position.z, crouchJump ? "crouch jump" : "jump", info->stuckAttempts);
++		};
++		extmanager->ForEachBot(check);
++	}
++
+ 	// pb_autokill: when every human is dead, bots are killed after pb_autokilldelay seconds so rounds do not drag on.
+ 	void CPodBotManager::UpdateAutoKill(float now)
+ 	{
+diff --git a/extension/podbot/podbot_manager.h b/extension/podbot/podbot_manager.h
+index aeaca4c..4d756bf 100644
+--- a/extension/podbot/podbot_manager.h
++++ b/extension/podbot/podbot_manager.h
+@@ -109,6 +109,10 @@ namespace podbot
+ 		// With no value it shows the current one. Returns the text to print.
+ 		std::string ConsoleSetting(const std::string& name, const std::string& value, bool hasValue);
+ 
++		// Called every server frame (cheap, does its own timing): pb_unstuck. A bot that keeps pushing against something
++		// for pb_unstuck_time seconds (1.5) without getting anywhere jumps and keeps moving the same way.
++		void Frame();
++
+ 		// Chat events
+ 		void OnOtherKilled(CCSSBot* bot, CBaseEntity* victim, CBaseEntity* attacker);
+ 		void OnBombPlanted(CCSSBot* bot);
+@@ -118,7 +122,7 @@ namespace podbot
+ 		void OnSight(CCSSBot* bot, CBaseEntity* subject);
+ 
+ 	private:
+-		struct BotInfo { int lastScopeAnswer = -1; float nextScopeLog = 0.0f; float stillSince = 0.0f; float nextCrouchRoll = 0.0f; bool crouching = false; int followClient = 0; float followUntil = 0.0f; float nextWallbangRoll = 0.0f; bool wallbang = false; const void* profilePtr = nullptr; int desiredTeam = 0; int desiredClass = 0; int teamAttempts = 0; float nextTeamAttempt = 0.0f; int skill = 100; Personality personality = Personality::Normal; float nextChatTime = 0.0f; float nextDeadChat = 0.0f; float nextRadio = 0.0f; };
++		struct BotInfo { float stuckSince = 0.0f; float stuckAnchor[3] = { 0.0f, 0.0f, 0.0f }; int stuckAttempts = 0; int lastScopeAnswer = -1; float nextScopeLog = 0.0f; float stillSince = 0.0f; float nextCrouchRoll = 0.0f; bool crouching = false; int followClient = 0; float followUntil = 0.0f; float nextWallbangRoll = 0.0f; bool wallbang = false; const void* profilePtr = nullptr; int desiredTeam = 0; int desiredClass = 0; int teamAttempts = 0; float nextTeamAttempt = 0.0f; int skill = 100; Personality personality = Personality::Normal; float nextChatTime = 0.0f; float nextDeadChat = 0.0f; float nextRadio = 0.0f; };
+ 		struct PendingSay { const CBaseBot* bot; float time; std::string msg; };
+ 
+ 		const void* ApplyProfile(CBaseBot* bot, int skill, Personality p); // returns the profile that was set
+@@ -135,6 +139,8 @@ namespace podbot
+ 		void CountPlayers(int& humans, int& bots) const;
+ 		bool NameInUse(const std::string& name) const;
+ 		void UpdateAutoKill(float now);
++		void UpdateObstacles(float now);
++		float m_nextObstacleCheck = 0.0f;
+ 		void UpdateTeams(float now);
+ 		float m_humansDeadSince = 0.0f;
+ 

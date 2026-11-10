@@ -48,6 +48,7 @@ public:
 	CBaseBot* AllocateBot(edict_t* edict) override;
 	void OnRoundStart() override;
 	void OnMapStart() override;
+	void Frame() override;
 	void OnMapEnd() override;
 	void OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CConCommandArgs& args) override;
 	void Update() override;

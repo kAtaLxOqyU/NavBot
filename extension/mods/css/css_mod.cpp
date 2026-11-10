@@ -166,6 +166,12 @@ void CCounterStrikeSourceMod::OnClientCommand(edict_t* pEdict, SourceMod::IGameP
 	}
 }
 
+void CCounterStrikeSourceMod::Frame()
+{
+	CBaseMod::Frame();
+	podbot::PodBot().Frame();
+}
+
 void CCounterStrikeSourceMod::Update()
 {
 	CBaseMod::Update();

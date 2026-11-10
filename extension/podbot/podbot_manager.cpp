@@ -11,6 +11,9 @@
 #include <manager.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
+#include <util/gamedata_const.h>
+#include <bot/interfaces/movement.h>
+#include <mods/css/css_lib.h>
 #include <bot/basebot.h>
 #include <bot/css/cssbot.h>
 #include <bot/interfaces/profile.h>
@@ -887,6 +890,105 @@ namespace podbot
 		info->nextChatTime = now + m_settings.GetFloat("pb_chat_cooldown", 8.0f);
 		const float typing = 1.0f + 0.06f * static_cast<float>(std::strlen(text)) + m_rng.Float(0.0f, 1.5f);
 		m_pending.push_back({ bot, now + typing, reply });
+	}
+
+	void CPodBotManager::Frame()
+	{
+		const float now = gpGlobals->curtime;
+
+		if (!m_loaded || now < m_nextObstacleCheck)
+		{
+			return;
+		}
+
+		m_nextObstacleCheck = now + 0.1f; // ten checks a second are plenty for a 1.5 second rule
+		UpdateObstacles(now);
+	}
+
+	// A bot that presses a move key but stays put for pb_unstuck_time seconds is pushing against something: jump and
+	// keep moving the same way. The direction is whatever move keys the bot was holding, so it works for any obstacle.
+	void CPodBotManager::UpdateObstacles(float now)
+	{
+		if (!m_settings.GetBool("pb_unstuck", true))
+		{
+			return;
+		}
+
+		const float window = std::max(0.5f, m_settings.GetFloat("pb_unstuck_time", 1.5f));
+		const auto& keys = GamedataConstants::s_user_buttons;
+		const int moveKeys = keys.forward | keys.backward | keys.moveleft | keys.moveright;
+
+		auto check = [this, now, window, &keys, moveKeys](CBaseBot* b)
+		{
+			BotInfo* info = Find(b);
+
+			if (info == nullptr)
+			{
+				return;
+			}
+
+			CCSSBot* bot = static_cast<CCSSBot*>(b);
+			IMovement* movement = bot->GetMovementInterface();
+
+			// nothing to do while dead, frozen, on a ladder, already jumping, breaking an obstacle, or fighting
+			if (!bot->IsAlive() || csslib::IsInFreezeTime() || movement->IsOnLadder() || movement->IsUsingLadder() || movement->IsClimbingOrJumping() || movement->NeedsWeaponControl())
+			{
+				info->stuckSince = 0.0f;
+				return;
+			}
+
+			const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+			const int buttons = bot->GetControlInterface()->GetOldButtonsToSend();
+
+			if ((buttons & moveKeys) == 0 || (threat != nullptr && threat->IsVisibleNow()))
+			{
+				info->stuckSince = 0.0f; // not trying to go anywhere, or the combat code is moving the bot
+				return;
+			}
+
+			const Vector position = bot->GetAbsOrigin();
+			const Vector anchor(info->stuckAnchor[0], info->stuckAnchor[1], info->stuckAnchor[2]);
+
+			if (info->stuckSince == 0.0f || (position - anchor).Length2D() > 24.0f)
+			{
+				// moving normally: start a new window from here
+				info->stuckAnchor[0] = position.x;
+				info->stuckAnchor[1] = position.y;
+				info->stuckAnchor[2] = position.z;
+				info->stuckSince = now;
+				info->stuckAttempts = 0;
+				return;
+			}
+
+			if (now - info->stuckSince < window)
+			{
+				return;
+			}
+
+			// pushed against something for the whole window without moving 24 units
+			info->stuckSince = now; // the next try comes after another window
+			info->stuckAttempts++;
+			const bool crouchJump = (info->stuckAttempts % 2) == 0; // alternate: a plain jump, then a crouch jump for higher edges
+
+			if (crouchJump)
+			{
+				movement->CrouchJump();
+			}
+			else
+			{
+				movement->Jump();
+			}
+
+			IPlayerController* control = bot->GetControlInterface();
+
+			if (buttons & keys.forward) { control->PressForwardButton(0.5f); }
+			if (buttons & keys.backward) { control->PressBackwardsButton(0.5f); }
+			if (buttons & keys.moveleft) { control->PressMoveLeftButton(0.5f); }
+			if (buttons & keys.moveright) { control->PressMoveRightButton(0.5f); }
+
+			DebugLog(bot, "stuck for %.1f s at %.0f %.0f %.0f: %s and keep moving (try %d)", window, position.x, position.y, position.z, crouchJump ? "crouch jump" : "jump", info->stuckAttempts);
+		};
+		extmanager->ForEachBot(check);
 	}
 
 	// pb_autokill: when every human is dead, bots are killed after pb_autokilldelay seconds so rounds do not drag on.
