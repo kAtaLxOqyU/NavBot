@@ -80,6 +80,11 @@ namespace detail
 // A glance is a short AimAt toward a point to the left or right of the travel direction, at head height.
 inline void UpdateLook(float now, const std::function<float(const char*, float)>& get, const std::function<void(CCSSBot*, const char*)>& log)
 {
+	// New map / new server: the game clock restarts at 0, so stored timestamps from the old map must go.
+	static float lastNow = 0.0f;
+	if (now + 0.5f < lastNow) { detail::States().clear(); }
+	lastNow = now;
+
 	if (get("pb_look", 1.0f) < 0.5f) { return; }
 
 	const float rate = get("pb_look_rate", 5.4f);
