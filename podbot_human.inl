@@ -229,12 +229,32 @@ namespace detail
 		float anchor[3] = { 0.0f, 0.0f, 0.0f };
 		float nextJiggle = 0.0f;
 		float jiggleRightAt = 0.0f;
+		std::string returnTo;   // classname of the weapon held before the flick
 	};
 
 	inline std::unordered_map<const void*, State>& States() { static std::unordered_map<const void*, State> s; return s; }
 	inline std::mt19937& Rng() { static std::mt19937 g{ std::random_device{}() }; return g; }
 	inline float Rand01() { return std::uniform_real_distribution<float>(0.0f, 1.0f)(Rng()); }
 	inline float RandRange(float a, float b) { return a + (b - a) * Rand01(); }
+
+	// Picks a weapon to flick to (a pistol, else the knife) that the bot owns and is not holding. Fills `held` with the weapon in hand.
+	// "lastinv" cannot be used: it does nothing when the bot has no previous weapon, which is the normal state at round start.
+	inline const char* PickFlickWeapon(CCSSBot* bot, std::string& held)
+	{
+		IInventory* inventory = bot->GetInventoryInterface();
+		const CBotWeapon* active = inventory->GetActiveBotWeapon();
+		if (active == nullptr) { return nullptr; }
+
+		held = active->GetClassname();
+		static const char* const order[] = { "weapon_usp", "weapon_glock", "weapon_deagle", "weapon_p228", "weapon_fiveseven", "weapon_elite", "weapon_knife" };
+
+		for (const char* name : order)
+		{
+			if (held == name) { continue; }
+			if (inventory->FindWeaponByClassname(name) != nullptr) { return name; }
+		}
+		return nullptr;
+	}
 
 	inline float PickContact(bool isT)
 	{
@@ -333,7 +353,8 @@ inline void UpdateFidget(float now, const std::function<float(const char*, float
 
 		if (st.secondAt > 0.0f && now >= st.secondAt)
 		{
-			PB_FAKE_CMD(bot, "lastinv");
+			if (!st.returnTo.empty()) { PB_FAKE_CMD(bot, (std::string("use ") + st.returnTo).c_str()); }
+			st.returnTo.clear();
 			st.secondAt = 0.0f;
 		}
 
@@ -349,10 +370,17 @@ inline void UpdateFidget(float now, const std::function<float(const char*, float
 
 		if (rate > 0.0f && st.secondAt == 0.0f && now >= st.nextEvent)
 		{
-			PB_FAKE_CMD(bot, "lastinv");
-			st.secondAt = now + detail::RandRange(0.15f, 0.40f); // demos: 41% of weapon selects come within 0.4 s of the last
+			std::string held;
+			const char* flick = detail::PickFlickWeapon(bot, held);
+
+			if (flick != nullptr)
+			{
+				PB_FAKE_CMD(bot, (std::string("use ") + flick).c_str());
+				st.returnTo = held;
+				st.secondAt = now + detail::RandRange(0.15f, 0.40f); // demos: 41% of weapon selects come within 0.4 s of the last
+				log(bot, "fidget: quick-switch pair");
+			}
 			st.nextEvent = now + (60.0f / (rate * st.fidgety)) * detail::RandRange(0.6f, 1.4f);
-			log(bot, "fidget: quick-switch pair");
 		}
 
 		const Vector position = bot->GetAbsOrigin();
