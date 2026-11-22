@@ -22,6 +22,9 @@
 #include "podbot_manager.h"
 #include "podbot_aim.h"
 
+#include "podbot_human.inl"
+#include "podbot_look.inl"
+
 namespace podbot
 {
 	CPodBotManager& PodBot()
@@ -903,6 +906,12 @@ namespace podbot
 
 		m_nextObstacleCheck = now + 0.1f; // ten checks a second are plenty for a 1.5 second rule
 		UpdateObstacles(now);
+		human::UpdateFidget(now,
+			[this](const char* n, float d) { return m_settings.GetFloat(n, d); },
+			[this](CCSSBot* b, const char* s) { DebugLog(b, "%s", s); });
+		look::UpdateLook(now,
+			[this](const char* n, float d) { return m_settings.GetFloat(n, d); },
+			[this](CCSSBot* b, const char* s) { DebugLog(b, "%s", s); });
 	}
 
 	// A bot that presses a move key but stays put for pb_unstuck_time seconds is pushing against something: jump and

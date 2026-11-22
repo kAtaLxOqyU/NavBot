@@ -3,6 +3,7 @@
 #include "nav/css_nav_mesh.h"
 #include "css_mod.h"
 #include <podbot/podbot_manager.h>
+#include <podbot/podbot_human.inl>
 
 #ifdef EXT_VPROF_ENABLED
 #include <tier0/vprof.h>
@@ -63,6 +64,7 @@ void CCounterStrikeSourceMod::FireGameEvent(IGameEvent* event)
 		}
 		else if (std::strcmp(name, "round_end") == 0)
 		{
+			podbot::human::EcoOnRoundEnd(event->GetInt("winner"), event->GetInt("reason"));
 			OnRoundEnd();
 		}
 		else if (std::strcmp(name, "player_say") == 0)
@@ -76,6 +78,7 @@ void CCounterStrikeSourceMod::FireGameEvent(IGameEvent* event)
 		}
 		else if (std::strcmp(name, "bomb_planted") == 0)
 		{
+			podbot::human::EcoOnBombPlanted();
 			OnBombPlanted(event->GetInt("userid"));
 		}
 		else if (std::strcmp(name, "hostage_follows") == 0)
@@ -141,6 +144,8 @@ void CCounterStrikeSourceMod::OnRoundStart()
 	{
 		m_teammoney[ctidx] = totalmoney[ctidx] / numplayers[ctidx];
 	}
+
+	podbot::human::EcoOnRoundStart();
 }
 
 void CCounterStrikeSourceMod::OnMapStart()
@@ -254,7 +259,7 @@ void CCounterStrikeSourceMod::BuyWeapons(CCSSBot* bot) const
 
 	auto myteam = bot->GetMyCSSTeam();
 
-	if (m_teammoney[static_cast<int>(myteam)] < GetCSSModSettings()->GetTeamEcoLimit())
+	if (!podbot::human::EcoActive() && m_teammoney[static_cast<int>(myteam)] < GetCSSModSettings()->GetTeamEcoLimit())
 	{
 		if (debugging)
 		{
@@ -267,7 +272,7 @@ void CCounterStrikeSourceMod::BuyWeapons(CCSSBot* bot) const
 
 	int money = csslib::GetPlayerMoney(bot->GetEntity());
 
-	if (money < GetCSSModSettings()->GetEcoLimit())
+	if (!podbot::human::EcoActive() && money < GetCSSModSettings()->GetEcoLimit())
 	{
 		if (debugging)
 		{
@@ -285,6 +290,11 @@ void CCounterStrikeSourceMod::BuyWeapons(CCSSBot* bot) const
 	const bool podbuy = podbot::PodBot().GetBuyPlan(bot, plan);
 
 	if (podbuy && plan.jasonMode)
+	{
+		return;
+	}
+
+	if (podbuy && podbot::human::EcoBuy(bot, money))
 	{
 		return;
 	}
