@@ -86,7 +86,7 @@ inline void UpdateLook(float now, const std::function<float(const char*, float)>
 	const float minSpeed = get("pb_look_min_speed", 100.0f);
 	const bool freezeNow = csslib::IsInFreezeTime();
 
-	extmanager->ForEachBot([&](CBaseBot* b)
+	auto lookFunc = [&](CBaseBot* b)
 	{
 		CCSSBot* bot = static_cast<CCSSBot*>(b);
 		detail::LookState& st = detail::States()[bot];
@@ -132,7 +132,9 @@ inline void UpdateLook(float now, const std::function<float(const char*, float)>
 		control->AimAt(target, IPlayerController::LOOK_SEARCH, g.duration, "podbot look-around glance");
 		st.nextGlance = now + NextGlanceDelay(rate);
 		log(bot, "look: glance");
-	});
+	};
+
+	extmanager->ForEachBot(lookFunc);
 }
 
 #endif // PB_LOOK_PURE_ONLY

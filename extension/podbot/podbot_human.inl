@@ -290,7 +290,7 @@ inline void UpdateFidget(float now, const std::function<float(const char*, float
 	const float jiggleAfter = std::max(2.0f, get("pb_fidget_jiggle_after", 8.0f));
 	const bool freezeNow = csslib::IsInFreezeTime();
 
-	extmanager->ForEachBot([&](CBaseBot* b)
+	auto fidgetFunc = [&](CBaseBot* b)
 	{
 		CCSSBot* bot = static_cast<CCSSBot*>(b);
 		detail::State& st = detail::States()[bot];
@@ -370,7 +370,9 @@ inline void UpdateFidget(float now, const std::function<float(const char*, float
 			st.nextJiggle = now + detail::RandRange(2.5f, 5.0f);
 			log(bot, "fidget: A-D jiggle");
 		}
-	});
+	};
+
+	extmanager->ForEachBot(fidgetFunc);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
