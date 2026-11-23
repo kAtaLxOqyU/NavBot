@@ -71,6 +71,7 @@ namespace detail
 		float lastTime = 0.0f;
 		Vector lastPos = Vector(0.0f, 0.0f, 0.0f);
 		float speed = 0.0f;
+		float nextReport = 0.0f;  // next time a "why no glance" line may be printed (debug only)
 		float travelYaw = 0.0f;   // direction of travel in degrees, from position changes (no eye-angle getter needed)
 	};
 	inline std::unordered_map<const void*, LookState>& States() { static std::unordered_map<const void*, LookState> s; return s; }
@@ -90,6 +91,7 @@ inline void UpdateLook(float now, const std::function<float(const char*, float)>
 	const float rate = get("pb_look_rate", 5.4f);
 	const float minSpeed = get("pb_look_min_speed", 100.0f);
 	const bool freezeNow = csslib::IsInFreezeTime();
+	const bool dbg = get("pb_look_debug", 0.0f) > 0.5f;   // 1 = print glances and the reason for skipped ones to the console
 
 	auto lookFunc = [&](CBaseBot* b)
 	{
@@ -124,8 +126,19 @@ inline void UpdateLook(float now, const std::function<float(const char*, float)>
 		const bool busy = (threat != nullptr && threat->IsVisibleNow()) || bot->HasTakenDamageRecently(1.0f);
 		IPlayerController* control = bot->GetControlInterface();
 
-		if (st.speed < minSpeed || busy || control->GetAimAtPriority() > IPlayerController::LOOK_PATH)
+		const bool tooSlow = st.speed < minSpeed;
+		const bool steered = control->GetAimAtPriority() > IPlayerController::LOOK_PATH;
+
+		if (tooSlow || busy || steered)
 		{
+#ifdef META_CONPRINTF
+			if (dbg && now >= st.nextReport)
+			{
+				st.nextReport = now + 5.0f;
+				META_CONPRINTF("[podbot look] %s: no glance (speed %.0f/%.0f, fighting %d, view busy with priority %d)\n",
+					bot->GetClientName(), st.speed, minSpeed, busy ? 1 : 0, static_cast<int>(control->GetAimAtPriority()));
+			}
+#endif
 			st.nextGlance = now + 0.5f;   // try again soon instead of waiting a whole interval
 			return;
 		}
@@ -137,6 +150,9 @@ inline void UpdateLook(float now, const std::function<float(const char*, float)>
 		control->AimAt(target, IPlayerController::LOOK_SEARCH, g.duration, "podbot look-around glance");
 		st.nextGlance = now + NextGlanceDelay(rate);
 		log(bot, "look: glance");
+#ifdef META_CONPRINTF
+		if (dbg) { META_CONPRINTF("[podbot look] %s: GLANCE %+.0f deg for %.2f s (speed %.0f)\n", bot->GetClientName(), g.angle, g.duration, st.speed); }
+#endif
 	};
 
 	extmanager->ForEachBot(lookFunc);
