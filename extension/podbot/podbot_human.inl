@@ -343,7 +343,12 @@ inline void UpdateFidget(float now, const std::function<float(const char*, float
 		}
 		else if (!st.known)
 		{
-			st.known = true; st.live = true; st.stopAt = 0.0f; st.fidgety = detail::RandRange(0.5f, 1.5f);
+			// first seen after freeze time (no freeze time on this server, or the bot joined mid-round): there is no freeze to measure
+			// the round start from, so use the time since the bot spawned (spawn = round start) to find how much of the safe window is left.
+			st.known = true; st.live = true; st.fidgety = detail::RandRange(0.5f, 1.5f);
+			const float window = StopTime(detail::PickContact(isT), drawTime, buffer);
+			st.stopAt = now + std::max(0.0f, window - bot->GetTimeSinceLastSpawn());
+			st.nextEvent = now + detail::RandRange(0.4f, 1.6f);
 		}
 
 		const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);

@@ -300,6 +300,12 @@ inline void UpdateFidget(float now, const std::function<float(const char*, float
 {
 	detail::Getter() = get;   // the eco hooks read settings through this
 
+	// New map / new server: the game clock restarts at 0, but the stored timestamps and per-bot states (keyed by bot address)
+	// and the round tracker are from the old map. Without this reset they sit far in the "future" and everything stays silent.
+	static float lastNow = 0.0f;
+	if (now + 0.5f < lastNow) { detail::States().clear(); detail::Eco() = detail::EcoState(); }
+	lastNow = now;
+
 	if (get("pb_fidget", 1.0f) < 0.5f) { return; }
 
 	const float drawTime = get("pb_fidget_draw_time", 1.0f);
@@ -337,7 +343,12 @@ inline void UpdateFidget(float now, const std::function<float(const char*, float
 		}
 		else if (!st.known)
 		{
-			st.known = true; st.live = true; st.stopAt = 0.0f; st.fidgety = detail::RandRange(0.5f, 1.5f);
+			// first seen after freeze time (no freeze time on this server, or the bot joined mid-round): there is no freeze to measure
+			// the round start from, so use the time since the bot spawned (spawn = round start) to find how much of the safe window is left.
+			st.known = true; st.live = true; st.fidgety = detail::RandRange(0.5f, 1.5f);
+			const float window = StopTime(detail::PickContact(isT), drawTime, buffer);
+			st.stopAt = now + std::max(0.0f, window - bot->GetTimeSinceLastSpawn());
+			st.nextEvent = now + detail::RandRange(0.4f, 1.6f);
 		}
 
 		const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
