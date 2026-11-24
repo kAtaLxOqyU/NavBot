@@ -24,6 +24,8 @@
 
 #include "podbot_human.inl"
 #include "podbot_look.inl"
+#include "podbot_fire.inl"
+#include "podbot_aim_human.inl"
 
 namespace podbot
 {
@@ -241,7 +243,14 @@ namespace podbot
 		}
 		else
 		{
-			bot->GetControlInterface()->SetAimOverride(std::make_shared<PodAimOverride>(aimParams, b, seed));
+			if (human::detail::Get("pb_aimh", 1.0f) > 0.5f)
+			{
+				bot->GetControlInterface()->SetAimOverride(std::make_shared<aimh::HumanAimOverride>(aimParams, b, seed));
+			}
+			else
+			{
+				bot->GetControlInterface()->SetAimOverride(std::make_shared<PodAimOverride>(aimParams, b, seed));
+			}
 		}
 
 		return profile.get();
@@ -910,6 +919,9 @@ namespace podbot
 			[this](const char* n, float d) { return m_settings.GetFloat(n, d); },
 			[this](CCSSBot* b, const char* s) { DebugLog(b, "%s", s); });
 		look::UpdateLook(now,
+			[this](const char* n, float d) { return m_settings.GetFloat(n, d); },
+			[this](CCSSBot* b, const char* s) { DebugLog(b, "%s", s); });
+		fire::UpdateFire(now,
 			[this](const char* n, float d) { return m_settings.GetFloat(n, d); },
 			[this](CCSSBot* b, const char* s) { DebugLog(b, "%s", s); });
 	}

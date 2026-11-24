@@ -90,8 +90,10 @@ CON_COMMAND(pb, "PODBot-style bot control: pb add|fillserver|reload")
 	X(pb_sniper) X(pb_sniper_camp_time) X(pb_scope_toggle_time) X(pb_awp_headshot_chance) \
 	X(pb_unstuck) X(pb_unstuck_time) \
 	X(pb_fidget) X(pb_fidget_freeze_rate) X(pb_fidget_run_rate) X(pb_fidget_draw_time) X(pb_fidget_buffer) X(pb_fidget_jiggle) X(pb_fidget_jiggle_after) \
+	X(pb_aimh) X(pb_aimh_archetype) X(pb_aimh_overshoot_chance) X(pb_aimh_onset_ms) X(pb_aimh_tremor) X(pb_aimh_jitter) X(pb_aimh_debug) \
+	X(pb_fire) X(pb_fire_burst) X(pb_fire_trigger_ms) X(pb_fire_cstrafe) X(pb_fire_cstrafe_ms) X(pb_fire_cstrafe_speed) X(pb_fire_recoil) X(pb_fire_recoil_max) X(pb_fire_awp_qq) X(pb_fire_awp_scope_min) X(pb_fire_debug) \
 	X(pb_eco) X(pb_eco_startmoney) X(pb_eco_half_rounds) X(pb_eco_ready_ratio) X(pb_eco_debug) \
-	X(pb_look) X(pb_look_rate) X(pb_look_min_speed)
+	X(pb_look) X(pb_look_rate) X(pb_look_min_speed) X(pb_look_debug)
 
 #define PODBOT_SETTING_COMMAND(name) \
 	CON_COMMAND(name, "PODBot setting " #name ": type a value to change it, or nothing to see it. Edit podbot.cfg to keep it.") \
