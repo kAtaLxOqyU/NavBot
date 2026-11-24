@@ -38,6 +38,8 @@ struct Cfg
 	float devX = 2.0f, devY = 1.0f, offsetDelay = 1.2f;   // idle error margin (units) when aiming at nothing
 	float noTargetSlowdown = 0.5f;
 	float maxTurn = 0.0f;                                  // deg/s cap, 0 = none
+	float levelDown = 4.0f;                                // relaxed looks (walking, idle): view never goes more than this many degrees below level
+	float levelUp = 8.0f;                                  // ... or this many degrees above level
 	// human layer
 	float overshootChance = 0.20f;                         // share of flicks that overshoot
 	float onsetMs = 70.0f;                                 // median reaction hold before a big flick toward an enemy
@@ -77,6 +79,9 @@ public:
 		}
 
 		Ang target = desired;
+		// Relaxed looks (idle and path) keep the view near level. NavBot's path look aims at the ground ahead, which made the
+		// bots stare at the floor while walking. Every other look needs the exact angle and is left alone. (Pitch: positive = down.)
+		if (!exact) { target.pitch = Clampf(target.pitch, -c.levelUp, c.levelDown); }
 		if (!exact && distance > 1.0f)
 		{
 			target.pitch += std::atan2(m_devP, distance) * kRad2Deg;
@@ -196,6 +201,7 @@ private:
 //   pb_aimh 1               use this aim instead of the plain spring (read when a bot is created)
 //   pb_aimh_archetype 0.16  spread of bot personalities (0 = every bot identical)
 //   pb_aimh_overshoot_chance 0.2, pb_aimh_onset_ms 70, pb_aimh_tremor 0.15, pb_aimh_jitter 0.08
+//   pb_aimh_level_down 4, pb_aimh_level_up 8   how far a relaxed (walking) look may leave level, degrees
 //   pb_aimh_debug 0         1 = print every flick of 20 degrees or more to the server console
 // plus the existing pb_aim_* spring settings (pb_aim_type 1 and 2 still use NavBot's own turn).
 class HumanAimOverride final : public IAimOverride
@@ -289,6 +295,8 @@ private:
 		m_cfg.offsetDelay = G("pb_aim_offset_delay", m_cfg.offsetDelay);
 		m_cfg.noTargetSlowdown = G("pb_aim_notarget_slowdown_ratio", m_cfg.noTargetSlowdown);
 		m_offsetDelay = m_cfg.offsetDelay;
+		m_cfg.levelDown = Clampf(G("pb_aimh_level_down", m_cfg.levelDown), 0.0f, 89.0f);
+		m_cfg.levelUp = Clampf(G("pb_aimh_level_up", m_cfg.levelUp), 0.0f, 89.0f);
 		m_cfg.overshootChance = Clampf(G("pb_aimh_overshoot_chance", m_cfg.overshootChance), 0.0f, 1.0f);
 		m_cfg.onsetMs = std::max(0.0f, G("pb_aimh_onset_ms", m_cfg.onsetMs));
 		m_cfg.tremorDeg = std::max(0.0f, G("pb_aimh_tremor", m_cfg.tremorDeg));

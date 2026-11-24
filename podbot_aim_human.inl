@@ -38,6 +38,8 @@ struct Cfg
 	float devX = 2.0f, devY = 1.0f, offsetDelay = 1.2f;   // idle error margin (units) when aiming at nothing
 	float noTargetSlowdown = 0.5f;
 	float maxTurn = 0.0f;                                  // deg/s cap, 0 = none
+	float levelDown = 4.0f;                                // relaxed looks (walking, idle): view never goes more than this many degrees below level
+	float levelUp = 8.0f;                                  // ... or this many degrees above level
 	// human layer
 	float overshootChance = 0.20f;                         // share of flicks that overshoot
 	float onsetMs = 70.0f;                                 // median reaction hold before a big flick toward an enemy
@@ -58,8 +60,10 @@ public:
 	float Speed() const { return m_speed; }
 	bool TakeFlick(FlickInfo& out) { if (!m_info.fresh) { return false; } out = m_info; m_info.fresh = false; return true; }
 
-	// current: the real view angles now (including recoil). desired: ideal angles. Returns the new view angles.
-	Ang Update(const Ang& current, const Ang& desired, bool hasTarget, float distance, float dt, float now, const Cfg& c)
+	// current: the bot's real eye angles (without the weapon kick). desired: ideal angles. Returns the new view angles.
+	// exact : the look needs the exact angle (anything above an idle or path look); false = relaxed look: slower, with an idle error margin.
+	// enemy : the bot is looking at an enemy (reaction onset and hold tremor apply).
+	Ang Update(const Ang& current, const Ang& desired, bool exact, bool enemy, float distance, float dt, float now, const Cfg& c)
 	{
 		if (!(dt > 0.0f)) { return current; }
 		dt = std::min(dt, 0.1f);
@@ -75,7 +79,10 @@ public:
 		}
 
 		Ang target = desired;
-		if (!hasTarget && distance > 1.0f)
+		// Relaxed looks (idle and path) keep the view near level. NavBot's path look aims at the ground ahead, which made the
+		// bots stare at the floor while walking. Every other look needs the exact angle and is left alone. (Pitch: positive = down.)
+		if (!exact) { target.pitch = Clampf(target.pitch, -c.levelUp, c.levelDown); }
+		if (!exact && distance > 1.0f)
 		{
 			target.pitch += std::atan2(m_devP, distance) * kRad2Deg;
 			target.yaw += std::atan2(m_devY, distance) * kRad2Deg;
@@ -85,7 +92,7 @@ public:
 		{
 			const float k = std::exp(-dt / 0.4f);
 			const float s = c.tremorDeg * std::sqrt(std::max(0.0f, 1.0f - k * k));
-			if (hasTarget && c.tremorDeg > 0.0f) { m_trP = m_trP * k + s * 0.7f * Normal(); m_trY = m_trY * k + s * Normal(); }
+			if (enemy && c.tremorDeg > 0.0f) { m_trP = m_trP * k + s * 0.7f * Normal(); m_trY = m_trY * k + s * Normal(); }
 			else { m_trP *= k; m_trY *= k; }
 			target.pitch += m_trP;
 			target.yaw += m_trY;
@@ -98,7 +105,7 @@ public:
 
 		if (m_state == State::Settled)
 		{
-			if (err > 5.0f) { BeginFlick(err, hasTarget, now, c); }
+			if (err > 5.0f) { BeginFlick(err, enemy, now, c); }
 		}
 		else if (m_state == State::Moving)
 		{
@@ -117,7 +124,7 @@ public:
 		const bool flicking = (m_state == State::Moving);
 		const float sMul = flicking ? m_stiffMul : 1.0f;
 		const float dMul = flicking ? m_dampMul : 1.0f;
-		const float scale = hasTarget ? 1.0f : c.noTargetSlowdown;
+		const float scale = exact ? 1.0f : c.noTargetSlowdown;
 		const float wP = c.stiffX * m_speed * sMul * scale;
 		const float wY = c.stiffY * m_speed * sMul * scale;
 		const float dP = c.dampX * c.dampScale * dMul;
@@ -152,14 +159,14 @@ private:
 	float RandRange(float a, float b) { return a + (b - a) * Rand01(); }
 	float Normal() { return std::normal_distribution<float>(0.0f, 1.0f)(m_rng); }
 
-	void BeginFlick(float size, bool hasTarget, float now, const Cfg& c)
+	void BeginFlick(float size, bool enemy, float now, const Cfg& c)
 	{
 		const bool over = Rand01() < c.overshootChance;
 		m_dampMul = over ? RandRange(0.68f, 0.90f) : RandRange(1.15f, 1.40f);
 		m_stiffMul = std::exp(c.flickJitter * Normal()) * (over ? kOverStiff : kCleanStiff);
 
 		m_onsetLeft = 0.0f;
-		if (hasTarget && c.onsetMs > 0.0f && size > 15.0f && now - m_lastOnset > 0.5f)
+		if (enemy && c.onsetMs > 0.0f && size > 15.0f && now - m_lastOnset > 0.5f)
 		{
 			m_onsetLeft = Clampf(c.onsetMs * 0.001f * std::exp(0.35f * Normal()), 0.02f, 0.4f);
 			m_lastOnset = now;
@@ -194,6 +201,7 @@ private:
 //   pb_aimh 1               use this aim instead of the plain spring (read when a bot is created)
 //   pb_aimh_archetype 0.16  spread of bot personalities (0 = every bot identical)
 //   pb_aimh_overshoot_chance 0.2, pb_aimh_onset_ms 70, pb_aimh_tremor 0.15, pb_aimh_jitter 0.08
+//   pb_aimh_level_down 4, pb_aimh_level_up 8   how far a relaxed (walking) look may leave level, degrees
 //   pb_aimh_debug 0         1 = print every flick of 20 degrees or more to the server console
 // plus the existing pb_aim_* spring settings (pb_aim_type 1 and 2 still use NavBot's own turn).
 class HumanAimOverride final : public IAimOverride
@@ -216,9 +224,9 @@ public:
 		RefreshCfg(0.0f);
 	}
 
-	Vector AdjustTarget(CBaseBot* bot, const Vector& target, bool isEntity) override
+	Vector AdjustTarget(CBaseBot* bot, const Vector& target, CBaseEntity* entity) override
 	{
-		if (!isEntity)
+		if (entity == nullptr)
 		{
 			return target;
 		}
@@ -234,16 +242,24 @@ public:
 		return target + m_offset;
 	}
 
-	bool Turn(CBaseBot* bot, const QAngle& current, const QAngle& desired, bool hasTarget, float distance, float dt, QAngle& out) override
+	bool Turn(CBaseBot* bot, const QAngle& current, const QAngle& desired, bool hasTarget, int priority, float distance, float dt, QAngle& out) override
 	{
 		const float now = gpGlobals->curtime;
 		RefreshCfg(now);
 
 		if (m_type <= 2) { return false; }   // snap / constant velocity: NavBot's own turn handles it
 
+		// Work on the bot's real eye angles: 'current' also contains the weapon's recoil kick, which the engine adds by itself.
+		const QAngle eye = bot->GetEyeAngles();
+
+		// Same rule as PodAimOverride: only idle and path looks are relaxed, every other look needs the exact angle.
+		const bool exact = priority > static_cast<int>(IPlayerController::LOOK_PATH);
+		const bool enemy = priority == static_cast<int>(IPlayerController::LOOK_COMBAT);
+
 		// recoil compensation (podbot_fire.inl estimates the recoil from the shots): the view is pulled down by part of it
-		const float pull = hasTarget ? fire::RecoilPull(bot, now) : 0.0f;
-		const Ang r = m_spring.Update(Ang{ current.x, current.y }, Ang{ desired.x + pull, desired.y }, hasTarget, distance, dt, now, m_cfg);
+		const float pull = enemy ? fire::RecoilPull(bot, now) : 0.0f;
+
+		const Ang r = m_spring.Update(Ang{ eye.x, eye.y }, Ang{ desired.x + pull, desired.y }, exact, enemy, distance, dt, now, m_cfg);
 		out.x = r.pitch;
 		out.y = r.yaw;
 		out.z = 0.0f;
@@ -279,6 +295,8 @@ private:
 		m_cfg.offsetDelay = G("pb_aim_offset_delay", m_cfg.offsetDelay);
 		m_cfg.noTargetSlowdown = G("pb_aim_notarget_slowdown_ratio", m_cfg.noTargetSlowdown);
 		m_offsetDelay = m_cfg.offsetDelay;
+		m_cfg.levelDown = Clampf(G("pb_aimh_level_down", m_cfg.levelDown), 0.0f, 89.0f);
+		m_cfg.levelUp = Clampf(G("pb_aimh_level_up", m_cfg.levelUp), 0.0f, 89.0f);
 		m_cfg.overshootChance = Clampf(G("pb_aimh_overshoot_chance", m_cfg.overshootChance), 0.0f, 1.0f);
 		m_cfg.onsetMs = std::max(0.0f, G("pb_aimh_onset_ms", m_cfg.onsetMs));
 		m_cfg.tremorDeg = std::max(0.0f, G("pb_aimh_tremor", m_cfg.tremorDeg));

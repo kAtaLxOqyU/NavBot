@@ -262,6 +262,7 @@ namespace detail
 		int qq = 0;                  // 0 none, 1 waiting to switch away, 2 waiting to switch back
 		float qqAt = 0.0f, qqSecondAt = 0.0f;
 		std::string qqHeld, qqPistol;
+		float holdAimUntil = 0.0f;   // keep aiming at the enemy until then (trigger held back)
 	};
 	inline std::unordered_map<const void*, BotState>& States() { static std::unordered_map<const void*, BotState> s; return s; }
 	inline Cfg& CurCfg() { static Cfg c; return c; }
@@ -336,7 +337,18 @@ inline void UpdateFire(float now, const std::function<float(const char*, float)>
 		Out out;
 		st.brain.Frame(in, c, out);
 
-		if (out.blockFire > 0.0f) { combat->DisableFiringWeapons(out.blockFire, out.releaseButtons); }
+		if (out.blockFire > 0.0f) { combat->DisableFiringWeapons(out.blockFire, out.releaseButtons); st.holdAimUntil = now + out.blockFire + 0.10f; }
+
+		// While the trigger is held back (burst gap, trigger delay, counter-strafe) a human keeps the crosshair on the enemy.
+		// Without this NavBot stops aiming and its look falls back to the path look: the view dropped to the floor after every burst.
+		if (now < st.holdAimUntil && in.threatVisible)
+		{
+			const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+			if (threat != nullptr && threat->GetEntity() != nullptr)
+			{
+				control->AimAt(threat->GetEntity(), IPlayerController::LOOK_COMBAT, 0.25f, "podbot fire: hold the enemy");
+			}
+		}
 		if (out.strafe < 0) { control->PressMoveLeftButton(out.tapDur); } else if (out.strafe > 0) { control->PressMoveRightButton(out.tapDur); }
 		if (out.forward > 0) { control->PressForwardButton(out.tapDur); } else if (out.forward < 0) { control->PressBackwardsButton(out.tapDur); }
 		if (out.scopeWant >= 0) { combat->SetWantsToScopeState(out.scopeWant == 1); }

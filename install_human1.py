@@ -14,7 +14,7 @@ INL = 'extension/podbot/podbot_human.inl'
 FIDGET = ['pb_fidget', 'pb_fidget_freeze_rate', 'pb_fidget_run_rate', 'pb_fidget_draw_time', 'pb_fidget_buffer', 'pb_fidget_jiggle', 'pb_fidget_jiggle_after']
 LOOK = ['pb_look', 'pb_look_rate', 'pb_look_min_speed', 'pb_look_debug']
 FIRE = ['pb_fire', 'pb_fire_burst', 'pb_fire_trigger_ms', 'pb_fire_cstrafe', 'pb_fire_cstrafe_ms', 'pb_fire_cstrafe_speed', 'pb_fire_recoil', 'pb_fire_recoil_max', 'pb_fire_awp_qq', 'pb_fire_awp_scope_min', 'pb_fire_debug']
-AIMH = ['pb_aimh', 'pb_aimh_archetype', 'pb_aimh_overshoot_chance', 'pb_aimh_onset_ms', 'pb_aimh_tremor', 'pb_aimh_jitter', 'pb_aimh_debug']
+AIMH = ['pb_aimh', 'pb_aimh_archetype', 'pb_aimh_overshoot_chance', 'pb_aimh_onset_ms', 'pb_aimh_tremor', 'pb_aimh_jitter', 'pb_aimh_level_down', 'pb_aimh_level_up', 'pb_aimh_debug']
 ECO = ['pb_eco', 'pb_eco_startmoney', 'pb_eco_half_rounds', 'pb_eco_ready_ratio', 'pb_eco_debug']
 
 CFG_FIDGET = """
@@ -65,6 +65,9 @@ pb_aimh_onset_ms 70
 # hold tremor in degrees, per-flick speed variation
 pb_aimh_tremor 0.15
 pb_aimh_jitter 0.08
+# relaxed looks (walking, idle) keep the view near level: at most this many degrees below / above level
+pb_aimh_level_down 4
+pb_aimh_level_up 8
 # 1 = print every flick of 20+ degrees to the server console
 pb_aimh_debug 0
 """
@@ -169,6 +172,10 @@ if 'X(pb_fire)' not in c:
 if 'X(pb_aimh)' not in c:
     a = 'X(pb_fidget_jiggle_after)'
     c = c.replace(a, a + ' \\\n\t' + ' '.join('X(%s)' % n for n in AIMH), 1); notes.append('commands: human aim settings')
+if 'X(pb_aimh_level_down)' not in c:
+    a = 'X(pb_aimh_debug)'
+    if a not in c: die('X(pb_aimh_debug) not found in ' + CMD)
+    c = c.replace(a, 'X(pb_aimh_level_down) X(pb_aimh_level_up) ' + a, 1); notes.append('commands: pb_aimh_level_down / _up')
 if 'X(pb_eco)' not in c:
     a = 'X(pb_fidget_jiggle_after)'
     c = c.replace(a, a + ' \\\n\t' + ' '.join('X(%s)' % n for n in ECO), 1); notes.append('commands: eco settings')
@@ -189,6 +196,8 @@ if 'pb_aimh ' not in g: g = add_after(g, 'pb_fidget_jiggle_after', CFG_AIMH); no
 for name, old, new in (('pb_aim_spring_stiffness_x', '13', '10'), ('pb_aim_spring_stiffness_y', '13', '14'), ('pb_aim_damper_coefficient_x', '0.22', '0.75'), ('pb_aim_damper_coefficient_y', '0.22', '0.73')):
     pat = re.compile(r'^(%s[ \t]+)%s(?:\.0+)?([ \t]*(?:#.*)?)$' % (name, re.escape(old)), re.M)
     if pat.search(g): g = pat.sub(lambda m: m.group(1) + new + m.group(2), g, count=1); notes.append('cfg: %s %s -> %s (fitted to the demos)' % (name, old, new))
+if 'pb_aimh_level_down' not in g:
+    g = add_after(g, 'pb_aimh_jitter', '# relaxed looks (walking, idle) keep the view near level: at most this many degrees below / above level\npb_aimh_level_down 4\npb_aimh_level_up 8\n'); notes.append('cfg: near-level limits')
 if 'pb_eco ' not in g: g = add_after(g, 'pb_fidget_jiggle_after', CFG_ECO); notes.append('cfg: eco block')
 out[CFG] = g
 
